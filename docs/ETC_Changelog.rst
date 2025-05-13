@@ -1,9 +1,11 @@
-Commit history doc ETC
-=======================
+List of changes from the original ETC
+=====================================
 
-1. Removed unnecessary data and matched directory structure with config repos.
+The ETC was originally created by forking the UASAL Exposure Time Calculator repo originally written by Aaron Goldtooth. The fork was first created on February 12th, 2025. This document lists the changes that have been made since the fork was made.
 
-2. Refactored `ExposureTimeSNRCalculator.py` to use the config structure. Added functions to interpolate sensor files. Primarily, the inputs are no longer hard coded in code but filenames must be passed into functions to get the corresponding calibration.
+1. Removed unused file data and matched directory structure with config repos.
+
+2. Refactored `ExposureTimeSNRCalculator.py` to use the config structure. Added functions to interpolate sensor files. The inputs are no longer hard coded in code but filenames must be passed into functions to get the corresponding calibration.
 
 3. Added `pyproject.toml` to make repo installable. Changed directory structure to make package installable.
 
@@ -31,17 +33,16 @@ Commit history doc ETC
 
 15. Gain no longer an option that can be provided into SNR calculations, must be specified implicitly through sensor calibration files.
 
-16. Fixed the `calc_req_source` and `calc_int_time` functions.
+16. Fixed the bugs in `calc_req_source` and `calc_int_time` functions.
 
 17. Fixed the SNR scaling in `calc_req_source` function, to now only take square root of the unit, not the value when calculating required source counts/magnitudes.
 
 18. Added the option to use either "UM" or "STP" when calling `make_STP`. This initializes the telescope from either `config_um` or `config_stp` respectively.
 
-19. Fixed read noise implementation (previously was not being squared) after converting image source to e- read noise is actually RMS electrons per frame. Also fixed the corresponding unit check when calling `config_sgp` respectively.
+19. Fixed read noise implementation (previously was not being squared) after confirming the source of e- read noise is actually RMS electrons per frame. Also fixed the corresponding unit check when calling `config_stp` respectively.
 
-20. Sky background no longer calculated by scaling the PSF area with the detector area. Now calculated by correctly estimating the total magnitude given the size of the PSF given a surface brightness. This can now be applied to use galaxies as an external background source as well.
+20. Sky background no longer calculated by scaling the PSF area with the detector area. Now calculated by estimating the total magnitude given the size of the PSF and a surface brightness. This can now be applied to use galaxies as an external background source as well.
 
 21. Added a Jupyter example notebook to demonstrate SNR calculations for a supernova in an embedded galaxy.
 
-22. Sky background normalization now performed in the Johnson V band, as this is the source of Zodi background SB from HST. 
-
+22. Sky background normalization now performed in the Johnson V band, as this is the source of Zodi background SB from HST.

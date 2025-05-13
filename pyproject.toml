@@ -3,11 +3,12 @@ requires = ["setuptools", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta" 
 
 [project]
-name = "etc_wcc"
+name = "stp_etc_imaging"
 authors = [
   {name = "Aaron Goldtooth", email = "gold1992@arizona.edu"},
   {name = "Justin Hom", email = "jrhom@arizona.edu"},
-  {name = "Jess Johnson", email = "jajohnson@arizona.edu"}
+  {name = "Jess Johnson", email = "jajohnson@arizona.edu"},
+  {name = "Sanchit Sabhlok", email = "ssabhlok@arizona.edu"}
 ]
 maintainers = [
   {name = "Sanchit Sabhlok", email = "ssabhlok@arizona.edu"}
@@ -21,18 +22,18 @@ dependencies = []
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/uasal/ETC_WCC/blob/develop/README.md"
-Changelog = "https://github.com/uasal/ETC_WCC/blob/develop/CHANGELOG.md"
-Repository = "https://github.com/uasal/ETC_WCC"
+Homepage = "https://github.com/uasal/stp_etc_imaging/blob/main/README.md"
+Changelog = "https://github.com/uasal/stp_etc_imaging/blob/main/CHANGELOG.md"
+Repository = "https://github.com/uasal/stp_etc_imaging"
 
 [tool.setuptools]
-packages = ["etc_wcc"]
+packages = ["stp_etc_imaging"]
 package-dir = { "" = "src" }
 include-package-data = true
 
 
 [tool.setuptools_scm]
-write_to = "src/etc_wcc/_version.py"
+write_to = "src/stp_etc_imaging/_version.py"
 version_scheme = "post-release"
 local_scheme = "node-and-date"
 
@@ -42,7 +43,7 @@ testpaths = [
 ]
 
 [tool.coverage.run]
-omit=["src/etc_wcc/_version.py"]
+omit=["src/stp_etc_imaging/_version.py"]
 
 [tool.setuptools.package-data]
-"etc_wcc" = ["support_data/**/*", "configs/**/*.toml"]
+"stp_etc_imaging" = ["support_data/**/*", "configs/**/*.toml"]

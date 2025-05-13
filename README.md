@@ -23,16 +23,16 @@ Optional dependencies - pandas
 
 ## Installation
 
-The Exposure Time Calculator is a python package that can be installed via a download from github and then installing on your system locally. You can directly clone the [ETC github repo](https://github.com/uasal/etc_wcc) or fork the repo and clone the fork. 
+The Exposure Time Calculator is a python package that can be installed via a download from github and then installing on your system locally. You can directly clone the [ETC github repo](https://github.com/uasal/stp_etc_imaging) or fork the repo and clone the fork. 
 ```
-$ git clone git@github.com:uasal/etc_wcc.git
-$ cd etc_wcc 
+$ git clone git@github.com:uasal/stp_etc_imaging.git
+$ cd stp_etc_imaging 
 $ pip install .
 ```
 The ETC should now be installed on your local machine. To confirm installation, the following import on python should work - 
 ```
-import etc_wcc
-etc_wcc.__version__
+import stp_etc_imaging
+stp_etc_imaging.__version__
 ```
 
 ## Example notebooks

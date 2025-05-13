@@ -13,7 +13,7 @@ import config_stp
 import config_stp_wcc
 import config_um
 
-from etc_wcc import ExposureTimeSNRCalculator as etsc
+from stp_etc_imaging import ExposureTimeSNRCalculator as etsc
 
 @pytest.fixture
 def UM():
