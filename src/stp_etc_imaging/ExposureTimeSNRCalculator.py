@@ -177,10 +177,10 @@ class Observatory:
         filter_fits_file = prepend_if_not_none(support_data_path, filter_fits_file)
         self.filters.append(f"{filter_fits_file} x {num_curves}")
         
-        bp = SpectralElement.from_filter(filter_fits_file)
+        bp = SpectralElement.from_file(filter_fits_file)
 
         for num in range(num_curves-1):
-            bp *= SpectralElement.from_filter(filter_fits_file)
+            bp *= SpectralElement.from_file(filter_fits_file)
 
         self.bandpass *= bp
         
