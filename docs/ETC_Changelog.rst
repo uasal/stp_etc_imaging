@@ -46,3 +46,5 @@ The ETC was originally created by forking the UASAL Exposure Time Calculator rep
 21. Added a Jupyter example notebook to demonstrate SNR calculations for a supernova in an embedded galaxy.
 
 22. Sky background normalization now performed in the Johnson V band, as this is the source of Zodi background SB from HST.
+
+23. The filter is now added using the `from_file` function instead of the `from_filter` function.
