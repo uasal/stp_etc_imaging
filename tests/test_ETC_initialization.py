@@ -4,7 +4,7 @@ matplotlib.use("TkAgg")
 import pytest
 import numpy as np
 import os
-from importlib import import_module
+import importlib.util
 import astropy.units as u
 from synphot import SpectralElement
 from synphot.models import Box1D
@@ -28,28 +28,18 @@ def telescope(request):
     return request.getfixturevalue(request.param)
 
 def test_module_installations():
-    try:
-        import_module("config_stp", package="config_stp")
-    except:
-        print("config_stp is not installed.")
-    try:
-        import_module("config_stp_wcc", package="config_stp_wcc")
-    except:
-        print("config_stp_wcc is not installed.")
-    try:
-        import_module("config_um", package="config_um")
-    except:
-        print("config_um is not installed.")
+    config_stp_spec = importlib.util.find_spec("config_stp")
+    config_um_spec = importlib.util.find_spec("config_um")
+    config_stp_wcc_spec = importlib.util.find_spec("config_stp_wcc")
+    assert config_stp_spec is not None, "config_stp is not installed"
+    assert config_um_spec is not None, "config_um is not installed"
+    assert config_stp_wcc_spec is not None, "config_stp_wcc is not installed"
 
-    print("Module Check: All modules installed.")
     return
 
 def test_environment_variables():
-    try:
-        assert "UASAL_ARCHIVE" in os.environ
-    except:
-        print("UASAL_ARCHIVE is not initialized in the environment.")
-    print("Environment variable check: All variables initialized.")
+    assert "UASAL_ARCHIVE" in os.environ, "UASAL_ARCHIVE is not initialized in the environment."
+
     return
 
 @pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
@@ -58,46 +48,36 @@ def test_configs_telescope(telescope):
         data_telescope = config_stp.load_config_values("parsed")
     if telescope == "UM":
         data_telescope = config_um.load_config_values("parsed")
-    try:
-        assert "value" in data_telescope['observatory']['pointing']['jitter_rms']
-        assert "value" in data_telescope['telescope']['optics']['m1']['aper_clear_OD']
-        assert "value" in data_telescope['telescope']['optics']['m1']['surface_rms']
-        assert isinstance(data_telescope['telescope']['general']['f_number'], float)
-        assert "value" in data_telescope['telescope']['optics']['m2']['aper_clear_OD']
-        assert "value" in data_telescope['telescope']['optics']['m2']['support_width']
-        assert isinstance(data_telescope['telescope']['optics']['m2']['n_supports'], int)
-    except:
-        print(f"Values could not be verified in {telescope} config. Possibly corrupted or modified data.")
 
-    print(f"Telescope Config Check: {telescope} configs initialized and confirmed.")
+    assert "value" in data_telescope['observatory']['pointing']['jitter_rms'], f"data_telescope['observatory']['pointing']['jitter_rms'] could not be verified in {telescope} config"
+    assert "value" in data_telescope['telescope']['optics']['m1']['aper_clear_OD'], f"data_telescope['telescope']['optics']['m1']['aper_clear_OD'] could not be verified in {telescope} config"
+    assert "value" in data_telescope['telescope']['optics']['m1']['surface_rms'], f"data_telescope['telescope']['optics']['m1']['surface_rms'] could not be verified in {telescope} config"
+    assert isinstance(data_telescope['telescope']['general']['f_number'], float), f"data_telescope['telescope']['general']['f_number'] could not be verified in {telescope} config"
+    assert "value" in data_telescope['telescope']['optics']['m2']['aper_clear_OD'], f"data_telescope['telescope']['optics']['m2']['aper_clear_OD'] could not be verified in {telescope} config"
+    assert "value" in data_telescope['telescope']['optics']['m2']['support_width'], f"data_telescope['telescope']['optics']['m2']['support_width'] could not be verified in {telescope} config"
+    assert isinstance(data_telescope['telescope']['optics']['m2']['n_supports'], int), f"data_telescope['telescope']['optics']['m2']['n_supports'] could not be verified in {telescope} config"
 
     return
 
 def test_configs_instrument():
     data_instrument = config_stp_wcc.load_config_values("parsed")
-    try:
-        assert "value" in data_instrument['common_params']['sensor']['temp_nominal']
-        assert isinstance(data_instrument['common_params']['sensor']['gain'], int)
-    except:
-        print(f"Value type mismatch. Potentially corrupted or modified data.")
-    print(f"Instrument Config Check: WCC configs initialized and confirmed.")
+
+    assert "value" in data_instrument['common_params']['sensor']['temp_nominal'], "Value type mismatch. Potentially corrupted or modified data."
+    assert isinstance(data_instrument['common_params']['sensor']['gain'], int), "Value type mismatch. Potentially corrupted or modified data."
+
     return
 
 @pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
 def test_default_throughput(telescope):
-    try:
-        obs = etsc.Observatory(telescope)
-        obs.make_STP()
-        flux = obs.bandpass(obs.bandpass.waveset)
-        bp_non_zero = flux[flux!=0]
-        waveset_non_zero = obs.bandpass.waveset[flux!=0]
-        assert round(np.min(waveset_non_zero).value,2) == 5380.0
-        assert round(np.max(waveset_non_zero).value,2) == 7229.99
-        assert round(np.mean(bp_non_zero).value, 3) == 0.133
-    except:
-        print("Throughput check failed. Default filter modified or corrupt installation.")
+    obs = etsc.Observatory(telescope)
+    obs.make_STP()
+    flux = obs.bandpass(obs.bandpass.waveset)
+    bp_non_zero = flux[flux!=0]
+    waveset_non_zero = obs.bandpass.waveset[flux!=0]
+    assert round(np.min(waveset_non_zero).value,2) == 5380.0, "Throughput check failed. Default filter modified or corrupt installation."
+    assert round(np.max(waveset_non_zero).value,2) == 7229.99, "Throughput check failed. Default filter modified or corrupt installation."
+    assert round(np.mean(bp_non_zero).value, 3) == 0.133, "Throughput check failed. Default filter modified or corrupt installation."
 
-    print("Throughput check: Filter and total throughput initialized and confirmed.")
     return
 
 @pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
@@ -105,21 +85,12 @@ def test_sensor_initialization(telescope):
     obs = etsc.Observatory(telescope)
     obs.make_STP()
     if telescope == "UM":
-        try:
-            assert round(obs.plate_scale,6) == 0.016869
-        except:
-            print("Sensor check: Incorrect plate scale. Potentially corrupt or modified configuration file.")
+        assert round(obs.plate_scale,6) == 0.016869, "Sensor check: Incorrect plate scale. Potentially corrupt or modified configuration file."
     if telescope == "STP":
-        try:
-            assert round(obs.plate_scale,6) == 0.008054
-        except:
-            print("Sensor check: Incorrect plate scale. Potentially corrupt or modified configuration file.")
-    try:
-        assert obs.num_psf_pixels.value == 36
-    except:
-        print("Incorrect PSF size.")
+        assert round(obs.plate_scale,6) == 0.008054, "Sensor check: Incorrect plate scale. Potentially corrupt or modified configuration file."
 
-    print("Sensor Check: Sensor initialized and confirmed.")
+    assert obs.num_psf_pixels.value == 36, "Incorrect PSF size."
+
     return
 
 @pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
@@ -133,7 +104,6 @@ def test_counts(telescope):
     zodi_magnitude_normalization = float(data_telescope['astrophysics']['zodi']['zodi_mag_r'])
     obs = etsc.Observatory(telescope)
     obs.make_STP()
-    uasal_archive = os.environ.get("UASAL_ARCHIVE")
     obs.set_source(source_pickles_file='test_data/pickles_uk_9.fits',
                    plot=True)
     obs.set_background(background_file=data_telescope['astrophysics']['zodi']['profile'], support_data_path=data_path_telescope,

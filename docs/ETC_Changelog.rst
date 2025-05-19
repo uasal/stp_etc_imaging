@@ -1,7 +1,7 @@
 List of changes from the original ETC
 =====================================
 
-The ETC was originally created by forking the UASAL Exposure Time Calculator repo originally written by Aaron Goldtooth. The fork was first created on February 12th, 2025. This document lists the changes that have been made since the fork was made.
+The ETC was originally created by forking the UASAL Exposure Time Calculator repo originally written by Aaron Goldtooth. The fork was first created on February 12th, 2025. This document lists the changes that have been made since the fork was made between the forked version and the initial ETC release.
 
 1. Removed unused file data and matched directory structure with config repos.
 
