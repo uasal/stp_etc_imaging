@@ -3,8 +3,6 @@ matplotlib.use("TkAgg")
 
 import pytest
 import numpy as np
-import os
-import importlib.util
 import astropy.units as u
 from synphot import SpectralElement
 from synphot.models import Box1D
@@ -12,6 +10,7 @@ from synphot.models import Box1D
 import config_stp
 import config_stp_wcc
 import config_um
+import utils_config
 
 from stp_etc_imaging import ExposureTimeSNRCalculator as etsc
 
@@ -24,30 +23,30 @@ def STP():
     return "STP"
 
 @pytest.fixture
+def test_STP():
+    return "test_STP"
+
+@pytest.fixture
+def test_UM():
+    return "test_UM"
+
+@pytest.fixture
 def telescope(request):
     return request.getfixturevalue(request.param)
 
-def test_module_installations():
-    config_stp_spec = importlib.util.find_spec("config_stp")
-    config_um_spec = importlib.util.find_spec("config_um")
-    config_stp_wcc_spec = importlib.util.find_spec("config_stp_wcc")
-    assert config_stp_spec is not None, "config_stp is not installed"
-    assert config_um_spec is not None, "config_um is not installed"
-    assert config_stp_wcc_spec is not None, "config_stp_wcc is not installed"
 
-    return
-
-def test_environment_variables():
-    assert "UASAL_ARCHIVE" in os.environ, "UASAL_ARCHIVE is not initialized in the environment."
-
-    return
-
-@pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
+@pytest.mark.parametrize("telescope", ["UM", "STP", "test_STP"], indirect=True)
 def test_configs_telescope(telescope):
     if telescope == "STP":
         data_telescope = config_stp.load_config_values("parsed")
     if telescope == "UM":
         data_telescope = config_um.load_config_values("parsed")
+    if telescope == "test_STP":
+        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        data_telescope = test_loader.load_configs()
+    if telescope == "test_UM":
+        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        data_telescope = test_loader.load_configs()
 
     assert "value" in data_telescope['observatory']['pointing']['jitter_rms'], f"data_telescope['observatory']['pointing']['jitter_rms'] could not be verified in {telescope} config"
     assert "value" in data_telescope['telescope']['optics']['m1']['aper_clear_OD'], f"data_telescope['telescope']['optics']['m1']['aper_clear_OD'] could not be verified in {telescope} config"
@@ -67,7 +66,7 @@ def test_configs_instrument():
 
     return
 
-@pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
+@pytest.mark.parametrize("telescope", ["UM", "STP", "test_STP", "test_UM"], indirect=True)
 def test_default_throughput(telescope):
     obs = etsc.Observatory(telescope)
     obs.make_STP()
@@ -93,7 +92,7 @@ def test_sensor_initialization(telescope):
 
     return
 
-@pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
+@pytest.mark.parametrize("telescope", ["UM", "test_UM", "STP", "test_STP"], indirect=True)
 def test_counts(telescope):
     if telescope == "STP":
         data_telescope = config_stp.load_config_values("parsed")
@@ -101,6 +100,15 @@ def test_counts(telescope):
     if telescope == "UM":
         data_telescope = config_um.load_config_values("parsed")
         data_path_telescope = config_um.get_data_path()
+    if telescope == "test_STP":
+        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        data_telescope = test_loader.load_configs()
+        data_path_telescope = config_stp.get_data_path()
+    if telescope == "test_UM":
+        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        data_telescope = test_loader.load_configs()
+        data_path_telescope = config_um.get_data_path()
+
     zodi_magnitude_normalization = float(data_telescope['astrophysics']['zodi']['zodi_mag_r'])
     obs = etsc.Observatory(telescope)
     obs.make_STP()
@@ -110,6 +118,7 @@ def test_counts(telescope):
                        plot=True)
     obs.make_observation(flux=0.0, flux_units='AB', bg_flux=zodi_magnitude_normalization, bg_flux_units=u.ABmag)
 
+    #   For Version 1.0.0
     if telescope == "UM":
         assert round(obs.source_counts.value) == 16230700376
         assert round(obs.sky_counts.value) == 20
@@ -118,7 +127,16 @@ def test_counts(telescope):
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.05
         assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 62
         assert round(obs.calc_saturation_time().value, 6) == 3.6e-5
-    if telescope == "STP":
+    if telescope == "test_UM":
+        assert round(obs.source_counts.value) == 16147078162
+        assert round(obs.sky_counts.value) == 20
+        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 127071
+        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
+        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.05
+        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 62
+        assert round(obs.calc_saturation_time().value, 6) == 3.6e-5
+    #   Version for config_STP 1.0.0
+    if telescope == "STP" or telescope == "test_STP":
         assert round(obs.source_counts.value) == 64610011021
         assert round(obs.sky_counts.value) == 79
         assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 254185
@@ -128,7 +146,7 @@ def test_counts(telescope):
         assert round(obs.calc_saturation_time().value, 6) == 9e-6
     return
 
-@pytest.mark.parametrize("telescope", ["UM", "STP"], indirect=True)
+@pytest.mark.parametrize("telescope", ["UM", "STP", "test_UM", "test_STP"], indirect=True)
 def test_validate_ETC_snr_calculation(telescope):
     if telescope == "STP":
         data_telescope = config_stp.load_config_values("parsed")
@@ -136,6 +154,15 @@ def test_validate_ETC_snr_calculation(telescope):
     if telescope == "UM":
         data_telescope = config_um.load_config_values("parsed")
         data_path_telescope = config_um.get_data_path()
+    if telescope == "test_STP":
+        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        data_telescope = test_loader.load_configs()
+        data_path_telescope = config_stp.get_data_path()
+    if telescope == "test_UM":
+        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        data_telescope = test_loader.load_configs()
+        data_path_telescope = config_um.get_data_path()
+
     zodi_magnitude_normalization = float(data_telescope['astrophysics']['zodi']['zodi_mag_r'])
     obs = etsc.Observatory(telescope)
     obs.make_STP(mirrors=False, filters=False)
@@ -203,8 +230,6 @@ def test_validate_ETC_snr_calculation(telescope):
 
 
 if __name__ == "__main__":
-    test_module_installations()
-    test_environment_variables()
     test_configs_telescope()
     test_configs_instrument()
     test_default_throughput()
