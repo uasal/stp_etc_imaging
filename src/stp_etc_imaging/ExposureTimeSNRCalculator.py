@@ -235,6 +235,8 @@ class Observatory:
                  , sensor=True
                  , mirrors=True
                  , bg_sb = None
+                 , custom_toml_dir = None
+                 , support_data_dir = None
                  # , left=4000 ,right=8000  # for plotting (units in angstroms)
                  ):
 
@@ -255,6 +257,16 @@ class Observatory:
             test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
             data_telescope = test_loader.load_configs()
             support_data_telescope = config_um.get_data_path()
+        if self.name == 'custom_toml':
+            if custom_toml_dir is None:
+                print("Directory for custom toml files must be provided. Exiting...")
+                exit()
+            if support_data_dir is None:
+                print("Support data directory for custom configuration must be provided. Exiting...")
+                exit()
+            custom_loader = utils_config.ConfigLoader(custom_toml_dir, "parsed")
+            data_telescope = custom_loader.load_configs()
+            support_data_telescope = support_data_dir
 
 
 
