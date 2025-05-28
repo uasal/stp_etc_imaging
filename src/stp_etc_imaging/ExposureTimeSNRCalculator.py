@@ -24,7 +24,7 @@ from math import ceil, floor, log10
 import config_stp
 import config_um
 import config_stp_wcc
-
+import utils_config
 data_stp_wcc = config_stp_wcc.load_config_values()
 
 #   One line function prepends the support path to variable s2 if s1 is provided, else returns s2 as is.
@@ -143,7 +143,8 @@ class Observatory:
         self.read_noise = read_noise
         self.well_depth = well_depth
         self.sensor_temp = sensor_temp
-
+        if sensor_qe[-5:] == '.fits':
+            sensor_qe = sensor_qe[:-5] + '.csv'
         bp = SpectralElement.from_file(sensor_qe, wave_unit=wave_unit)
 
         for num in range(num_curves-1):
@@ -244,6 +245,18 @@ class Observatory:
         if self.name == 'UM':
             data_telescope = config_um.load_config_values("parsed")
             support_data_telescope = config_um.get_data_path()
+
+        if self.name == 'test_STP':
+            test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+            data_telescope = test_loader.load_configs()
+            support_data_telescope = config_stp.get_data_path()
+
+        if self.name == 'test_UM':
+            test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+            data_telescope = test_loader.load_configs()
+            support_data_telescope = config_um.get_data_path()
+
+
 
         self.data_observatory = data_telescope
         self.data_wcc = config_stp_wcc.load_config_values("parsed")
