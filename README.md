@@ -1,18 +1,25 @@
 # README
-Exposure Time Calculator (ETC) developed for Wavefront and Context Camera (WCC).
+Exposure Time Calculator (ETC) for estimating sensitivity of complex optical systems with commercial imaging sensors for astronomical space telescope program (STP) science.
 
 Originally written by Aaron Goldtooth
 
 Additional Contributions from Jess Johnson, Justin Hom and Sanchit Sabhlok 
 
 ## Requirements
-The package requires a number of other configuration repos to be setup to fully configure the STP or UM telescopes or instruments. These are -
-1. [config_um](https://github.com/uasal/config_um) - The configuration repo for Ultramarine 3 m telescope.
-2. [config_stp](https://github.com/uasal/config_stp) - The configuration repo for the Space Telescope Project.
-3. [config_stp_wcc](https://github.com/uasal/config_stp_wcc) - Configuration repo for the WCC instrument. 
 
-All the information regarding the telescope and instrument is drawn from these repos. The repos also contain supporting data files for the filters, coatings, sensors, etc...
+The package requires  configuration repos that define a telescope or instrument system. While the ETC can function without them, this is neither recommended nor a supported mode. All the information regarding the telescope and instrument is drawn from these repos. The repos also contain supporting data files for the filters, coatings, sensors, etc...
 
+### Telescope
+
+1. [config_um](https://github.com/uasal/config_um) - The configuration repo for UA Ultramarine 3 m telescope concept.
+2. [config_stp](https://github.com/uasal/config_stp) - The configuration repo for the Space Telescope Project 6.5m (https://arxiv.org/abs/2309.04934).
+
+### Instrument
+
+1. [config_stp_wcc](https://github.com/uasal/config_stp_wcc) - Configuration repo for the WCC instrument on the STP 6.5m telescope. 
+2. [config_um_wcc](https://github.com/uasal/config_um_wcc) - Configuration repo for the WCC instrument on the UA Ultramarine telescope. 
+
+### UASAL Archive
 For full functionality including stellar and galactic spectra, you will need to set up access to the [UASAL archive](https://github.com/uasal/uasal_archive) and add a path variable `$UASAL_ARCHIVE` to your environment, pointing to the location of the cloned UASAL Archive directory. 
 
 The installation instructions for these packages can be found on their corresponding github repos. 
