@@ -21,9 +21,19 @@ from math import ceil, floor, log10
 
 ### Defining Classes
 
-import config_stp
-import config_um
-import config_stp_wcc
+try:
+    import config_stp
+except:
+    print("config_stp could not be imported. Please check installation.")
+try:
+    import config_um
+except:
+    print("config_um could not be imported. Please check installation.")
+try:
+    import config_stp_wcc
+except:
+    print("config_stp could not be imported. Please check installation.")
+
 import utils_config
 data_stp_wcc = config_stp_wcc.load_config_values()
 
