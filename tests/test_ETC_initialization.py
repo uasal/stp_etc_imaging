@@ -7,10 +7,18 @@ import astropy.units as u
 from synphot import SpectralElement
 from synphot.models import Box1D
 
-import config_stp
-import config_stp_wcc
-import config_um
-import utils_config
+try:
+    import config_stp
+    import config_stp_wcc
+    import config_um
+except:
+    print("Could not import configuration repos.")
+
+try:
+    import utils_config
+except:
+    print("Could not import utils_config. Cannot parse tomls. Exiting.")
+    exit()
 
 from stp_etc_imaging import ExposureTimeSNRCalculator as etsc
 
@@ -228,11 +236,3 @@ def test_validate_ETC_snr_calculation(telescope):
 
     return
 
-
-if __name__ == "__main__":
-    test_configs_telescope()
-    test_configs_instrument()
-    test_default_throughput()
-    test_sensor_initialization()
-    test_counts()
-    test_validate_ETC_snr_calculation()

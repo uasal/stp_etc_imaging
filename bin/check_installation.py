@@ -14,14 +14,12 @@ def check_module_installations():
 
     if (config_stp_spec is not None) and (config_um_spec is not None) and (config_stp_wcc_spec is not None):
         print("All configuration modules detected.")
-    return
 
 def check_environment_variables():
     if "UASAL_ARCHIVE" in os.environ:
         print("UASAL_ARCHIVE Environment variable detected.")
     else:
         print("UASAL_ARCHIVE not defined.")
-    return
 
 if __name__ == "__main__":
     check_module_installations()
