@@ -16,9 +16,9 @@ maintainers = [
 description = "Exposure Time Calculator for the Wavefront Context Camera on STP."
 readme = "README.md"
 license = { text = "GNU GENERAL PUBLIC LICENSE - Version 3" }
-requires-python = ">=3.8"
-dependencies = []
-
+requires-python = ">=3.12"
+dependencies = ["numpy", "astropy", "matplotlib", "scipy", "synphot", "math", "pandas", "utils_config"]
+optional-dependencies = ["config_stp", "config_um", "config_stp_wcc", "config_um_wcc", "pytest"]
 dynamic = ["version"]
 
 [project.urls]
