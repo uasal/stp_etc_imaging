@@ -96,7 +96,7 @@ def test_sensor_initialization(telescope):
     if telescope == "STP":
         assert round(obs.plate_scale,6) == 0.008054, "Sensor check: Incorrect plate scale. Potentially corrupt or modified configuration file."
 
-    assert obs.num_psf_pixels.value == 36, "Incorrect PSF size."
+    assert obs.num_psf_pixels.value == 36, "Incorrect PSF size. Indicates unexpected change in input parameters."
 
     return
 
