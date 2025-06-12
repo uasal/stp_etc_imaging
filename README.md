@@ -1,38 +1,49 @@
-# config_project_template
-Example of a configuration repository that is used with a specific simulation tool (or group of tools).
+# README
+Exposure Time Calculator (ETC) for estimating sensitivity of complex optical systems with commercial imaging sensors for astronomical space telescope program (STP) science.
 
-The naming convention should be config_project_toolname. So a hypothetical example could be `config_hubble_acs`.
+Originally written by Aaron Goldtooth
 
-The directory structure is designed as follows:
+Additional Contributions from Jess Johnson, Justin Hom and Sanchit Sabhlok 
 
-- Configuration parameters that are common to all tools in the repository belong in the `common_params.toml` file. 
-- A separate directory (should be named the same as the repo) is needed for python packaging (`config_project_template`).
-- All tool configs must have an `_init.toml` file which contains the default set of parameters for that tool.
-- Config files must contain both values and units. 
-  - Units shall utilize the astropy format.
-- Values without a unit will be marked as *unitless*.
-- The origin of the values should be in a comment (for now).
-- At this time, no other filenames should start with an `_`. This functionality is reserved for future feature implementation(s).
-- Any added configuration file must contain the *full set* of available parameters and not just overrides for the defaults.
+## Requirements
 
-Configuration files may contain key valued pairs, but also utilize groupings. Such as:
+The package requires  configuration repos that define a telescope or instrument system. While the ETC can function without them, this is neither recommended nor a supported mode. All the information regarding the telescope and instrument is drawn from these repos. The repos also contain supporting data files for the filters, coatings, sensors, etc...
 
-```toml
-OD_optic1 = '50e-3m'
-[sim_settings]  # settings for simulation tool
-npix = 4096 # number of pixels per frame
-beamrad = 0.4 # fractional beam radius
+### Telescope
+
+1. [config_um](https://github.com/uasal/config_um) - The configuration repo for UA Ultramarine 3 m telescope concept.
+2. [config_stp](https://github.com/uasal/config_stp) - The configuration repo for the Space Telescope Project 6.5m (https://arxiv.org/abs/2309.04934).
+
+### Instrument
+
+1. [config_stp_wcc](https://github.com/uasal/config_stp_wcc) - Configuration repo for the WCC instrument on the STP 6.5m telescope. 
+2. [config_um_wcc](https://github.com/uasal/config_um_wcc) - Configuration repo for the WCC instrument on the UA Ultramarine telescope. 
+
+### UASAL Archive
+For full functionality including stellar and galactic spectra, you will need to set up access to the [UASAL archive](https://github.com/uasal/uasal_archive) and add a path variable `$UASAL_ARCHIVE` to your environment, pointing to the location of the cloned UASAL Archive directory. 
+
+The installation instructions for these packages can be found on their corresponding GitHub repos. 
+
+Additional package dependencies required for the ETC - astropy, numpy, matplotlib, scipy and synphot.
+
+Optional dependencies - pandas
+
+## Installation
+
+The Exposure Time Calculator is a Python package that can be installed via a download from GitHub and then installing on your system locally. You can directly clone the [ETC GitHub repo](https://github.com/uasal/stp_etc_imaging) or fork the repo and clone the fork. 
+```
+$ git clone git@github.com:uasal/stp_etc_imaging.git
+$ cd stp_etc_imaging 
+$ pip install .
+```
+The ETC should now be installed on your local machine. To confirm installation, the following import on Python should work - 
+```
+import stp_etc_imaging
+stp_etc_imaging.__version__
 ```
 
-## Configuration Management
-Refer to the [UASAL Configuration Management Summary](https://github.com/uasal/lab_documents/blob/main/computing/development_guide/configuration_management.md) for additionally details on how analysis, simulation tools, and configuration repositories are structured within the UASAL GitHub organization.
+## Example notebooks
+Three demo notebooks are provided with the ETC. The `ETC_Demo.ipynb` notebook walks through the full functionality of the ETC, whereas the `Example_ETC_SNR_Calculation_SN1a.ipynb` walks through the specific science case of Type IA Supernovae embedded in host galaxies. `Throughput.ipynb` calculates the total throughput of a given setup.
 
-For Configuration FAQ's, also defer to the [UASAL Configuration Management Summary](https://github.com/uasal/lab_documents/blob/main/computing/development_guide/configuration_management.md) for more information.
-
-------------
-
-<!-- This code uses ``pre-commit`` to check yaml file syntax, maintain ``black`` formatting, and check ``flake8`` compliance.
-To enable this, run the following commands once (the first removes the previous pre-commit hook)::
-
-    git config --unset-all core.hooksPath
-    pre-commit install -->
+## Report a Bug or Request a Feature
+The ETC is currently actively maintained on GitHub. Bug Fixes or Features can be requested by opening an issue on the GitHub. When opening an issue, please attach a functional code segment demonstrating the behavior and a description of the desired behavior. This will help us address issues and patch the ETC in a timely manner. 
