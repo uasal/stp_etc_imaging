@@ -1,33 +1,39 @@
-# This part shouldn't change
 [build-system]
 requires = ["setuptools", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta" 
 
 [project]
-name = "config_project_template" # <- Edit this (repo name)
-description = "Template config_project_template repository example" # Edit this
-readme = "README.md"
-license = { text = "GNU GENERAL PUBLIC LICENSE - Verison 3" }
-requires-python = ">=3.8"
-dependencies = [
-    "utils_config @ git+https://github.com/uasal/utils_config.git@develop"  
+name = "stp_etc_imaging"
+authors = [
+  {name = "Aaron Goldtooth", email = "gold1992@arizona.edu"},
+  {name = "Justin Hom", email = "jrhom@arizona.edu"},
+  {name = "Jess Johnson", email = "jajohnson@arizona.edu"},
+  {name = "Sanchit Sabhlok", email = "ssabhlok@arizona.edu"}
 ]
+maintainers = [
+  {name = "Sanchit Sabhlok", email = "ssabhlok@arizona.edu"}
+]
+description = "Exposure Time Calculator for the Wavefront Context Camera on STP."
+readme = "README.md"
+license = { text = "GNU GENERAL PUBLIC LICENSE - Version 3" }
+requires-python = ">=3.12"
+dependencies = ["numpy", "astropy", "matplotlib", "scipy", "synphot", "math", "pandas", "utils_config"]
+optional-dependencies = ["config_stp", "config_um", "config_stp_wcc", "config_um_wcc", "pytest"]
 dynamic = ["version"]
 
-# Edit this section with URLs for the README.md, CHANGELOG.md, and repository.
 [project.urls]
-Homepage = "https://github.com/uasal/config_project_template/blob/main/README.md" 
-Changelog = "https://github.com/uasal/config_template/blob/main/CHANGELOG.md" 
-Repository = "https://github.com/uasal/config_project_template" 
+Homepage = "https://github.com/uasal/stp_etc_imaging/blob/main/README.md"
+Changelog = "https://github.com/uasal/stp_etc_imaging/blob/main/CHANGELOG.md"
+Repository = "https://github.com/uasal/stp_etc_imaging"
 
 [tool.setuptools]
-packages = ["config_project_template"] # Edit this to package name (repo name)
+packages = ["stp_etc_imaging"]
 package-dir = { "" = "src" }
 include-package-data = true
 
-# Generated the _version.py automatically from GitHub tags
+
 [tool.setuptools_scm]
-write_to = "src/config_project_template/_version.py" # Modify the path where the _version.py lives
+write_to = "src/stp_etc_imaging/_version.py"
 version_scheme = "post-release"
 local_scheme = "node-and-date"
 
@@ -36,9 +42,8 @@ testpaths = [
 	"tests",
 ]
 
-# This should match the path for the write_to under tool.setuptools_scm
 [tool.coverage.run]
-omit=["src/config_project_template/_version.py"] # Modify the path where the _version.py lives 
+omit=["src/stp_etc_imaging/_version.py"]
 
 [tool.setuptools.package-data]
-"config_project_template" = ["support_data/**/*", "configs/**/*.toml"] # Edit the config_project part
+"stp_etc_imaging" = ["support_data/**/*", "configs/**/*.toml"]
