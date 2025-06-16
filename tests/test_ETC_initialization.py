@@ -50,10 +50,10 @@ def test_configs_telescope(telescope):
     if telescope == "UM":
         data_telescope = config_um.load_config_values("parsed")
     if telescope == "test_STP":
-        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_STP', "parsed")
         data_telescope = test_loader.load_configs()
     if telescope == "test_UM":
-        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_UM', "parsed")
         data_telescope = test_loader.load_configs()
 
     assert "value" in data_telescope['observatory']['pointing']['jitter_rms'], f"data_telescope['observatory']['pointing']['jitter_rms'] could not be verified in {telescope} config"
@@ -109,18 +109,18 @@ def test_counts(telescope):
         data_telescope = config_um.load_config_values("parsed")
         data_path_telescope = config_um.get_data_path()
     if telescope == "test_STP":
-        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_STP', "parsed")
         data_telescope = test_loader.load_configs()
         data_path_telescope = config_stp.get_data_path()
     if telescope == "test_UM":
-        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_UM', "parsed")
         data_telescope = test_loader.load_configs()
         data_path_telescope = config_um.get_data_path()
 
     zodi_magnitude_normalization = float(data_telescope['astrophysics']['zodi']['zodi_mag_r'])
     obs = etsc.Observatory(telescope)
     obs.make_STP()
-    obs.set_source(source_pickles_file='test_data/pickles_uk_9.fits',
+    obs.set_source(source_pickles_file='tests/test_data/pickles_uk_9.fits',
                    plot=True)
     obs.set_background(background_file=data_telescope['astrophysics']['zodi']['profile'], support_data_path=data_path_telescope,
                        plot=True)
@@ -163,11 +163,11 @@ def test_validate_ETC_snr_calculation(telescope):
         data_telescope = config_um.load_config_values("parsed")
         data_path_telescope = config_um.get_data_path()
     if telescope == "test_STP":
-        test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_STP', "parsed")
         data_telescope = test_loader.load_configs()
         data_path_telescope = config_stp.get_data_path()
     if telescope == "test_UM":
-        test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
+        test_loader = utils_config.ConfigLoader('tests/test_data/test_UM', "parsed")
         data_telescope = test_loader.load_configs()
         data_path_telescope = config_um.get_data_path()
 
@@ -178,7 +178,7 @@ def test_validate_ETC_snr_calculation(telescope):
 
     test_flux_mag = 18.0
     test_wavelength = 5500 #    Angstroms
-    obs.set_source(source_pickles_file='test_data/pickles_uk_9.fits',
+    obs.set_source(source_pickles_file='tests/test_data/pickles_uk_9.fits',
                    plot=True)
     obs.set_background(background_file=data_telescope['astrophysics']['zodi']['profile'], support_data_path=data_path_telescope,
                        plot=True)
