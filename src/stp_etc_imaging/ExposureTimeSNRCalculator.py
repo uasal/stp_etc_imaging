@@ -259,12 +259,12 @@ class Observatory:
             support_data_telescope = config_um.get_data_path()
 
         if self.name == 'test_STP':
-            test_loader = utils_config.ConfigLoader('tests/test_data/test_STP', "parsed")
+            test_loader = utils_config.ConfigLoader('test_data/test_STP', "parsed")
             data_telescope = test_loader.load_configs()
             support_data_telescope = config_stp.get_data_path()
 
         if self.name == 'test_UM':
-            test_loader = utils_config.ConfigLoader('tests/test_data/test_UM', "parsed")
+            test_loader = utils_config.ConfigLoader('test_data/test_UM', "parsed")
             data_telescope = test_loader.load_configs()
             support_data_telescope = config_um.get_data_path()
         if self.name == 'custom_toml':
