@@ -36,6 +36,10 @@ $ git clone git@github.com:uasal/stp_etc_imaging.git
 $ cd stp_etc_imaging 
 $ pip install .
 ```
+> [!Note]
+> To install package with optional dependencies *(ex. config_stp, config_um, pytest, etc...)*, run the following pip command instead:<br>
+> `pip install .[dev]`
+
 The ETC should now be installed on your local machine. To confirm installation, the following import on Python should work - 
 ```
 import stp_etc_imaging
