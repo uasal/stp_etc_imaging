@@ -45,7 +45,7 @@ $ pip install .
 > **OR**<br>
 > `pip install ".[dev]"`
 >
-> Pytests will be able to be used when installing `stp_etc_imaging` with the `.[dev]` install.
+> Pytests will be able to be used when installing `stp_etc_imaging` with the `.[dev]` command.
 
 The ETC should now be installed on your local machine. To confirm installation, the following import on Python should work - 
 ```
