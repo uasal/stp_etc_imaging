@@ -189,7 +189,7 @@ class Observatory:
         self.filters.append(f"{filter_fits_file} x {num_curves}")
         
         bp = SpectralElement.from_file(filter_fits_file)
-
+        bp = self.crop_spectral_element(bp)
         for num in range(num_curves-1):
             bp *= SpectralElement.from_file(filter_fits_file)
 
@@ -674,6 +674,15 @@ class Observatory:
         # Get info as array
         return np.array(list(self.__dict__.items()), dtype=object)
 
+    def crop_spectral_element(self, bp):
+        wave = bp.waveset
+        throughput = bp(wave)
+        wave = wave.insert(0, (wave[0].value - 1) * wave[0].unit)
+        wave = wave.insert(len(wave), (wave[-1].value+1)*wave[0].unit)
+        throughput = throughput.insert(0, 0.0)
+        throughput = throughput.insert(len(throughput), 0.0)
+        new_spec = SpectralElement(Empirical1D, points=wave, lookup_table=throughput)
+        return new_spec
 
     def as_df(self):
         # Get info as pandas data frame
