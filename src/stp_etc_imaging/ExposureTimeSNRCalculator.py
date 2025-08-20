@@ -675,6 +675,10 @@ class Observatory:
         return np.array(list(self.__dict__.items()), dtype=object)
 
     def crop_spectral_element(self, bp):
+        """
+        :param bp: Bandpass that needs to be cropped
+        :return: SpectralElement, cropped Bandpass that starts and ends with 0.0 throughput
+        """
         wave = bp.waveset
         throughput = bp(wave)
         wave = wave.insert(0, (wave[0].value - 1) * wave[0].unit)

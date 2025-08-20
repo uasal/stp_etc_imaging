@@ -81,8 +81,12 @@ def test_default_throughput(telescope):
     flux = obs.bandpass(obs.bandpass.waveset)
     bp_non_zero = flux[flux!=0]
     waveset_non_zero = obs.bandpass.waveset[flux!=0]
+    #   The filter min max values come from the first and last non zero elements in the VO SDSS r prime filter file.
     assert round(np.min(waveset_non_zero).value,2) == 5342.0, "Throughput check failed. Default filter modified or corrupt installation."
     assert round(np.max(waveset_non_zero).value,2) == 7350.99, "Throughput check failed. Default filter modified or corrupt installation."
+    #   The mean value is what we get with the current ETC throughput on the default filter.
+    #   Hard coded for consistency checks between versions.
+    #   This value updates if major components of the default toml update.
     assert round(np.mean(bp_non_zero).value, 3) == 0.287, "Throughput check failed. Default filter modified or corrupt installation."
 
     return
@@ -126,7 +130,10 @@ def test_counts(telescope):
                        plot=True)
     obs.make_observation(flux=0.0, flux_units='AB', bg_flux=zodi_magnitude_normalization, bg_flux_units=u.ABmag)
 
-    #   For Version 1.0.0
+    #   Hard coded values are what we get when we run the ETC after confirming all checks are good.
+    #   The values maintain consistency between version updates, and make sure identical values are generated on the
+    #   test tomls if the configs change versions. This keeps track of configs version updates, updates to the default
+    #   setup and updates to any code.
     if telescope == "UM":
         assert round(obs.source_counts.value) == 37780689208
         assert round(obs.sky_counts.value) == 47
@@ -143,7 +150,6 @@ def test_counts(telescope):
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.96
         assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 27
         assert round(obs.calc_saturation_time().value, 6) == 1.6e-5
-    #   Version for config_STP 1.0.0
     if telescope == "STP" or telescope == "test_STP":
         assert round(obs.source_counts.value) == 150394665022
         assert round(obs.sky_counts.value) == 186
