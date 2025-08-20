@@ -81,9 +81,13 @@ def test_default_throughput(telescope):
     flux = obs.bandpass(obs.bandpass.waveset)
     bp_non_zero = flux[flux!=0]
     waveset_non_zero = obs.bandpass.waveset[flux!=0]
-    assert round(np.min(waveset_non_zero).value,2) == 5380.0, "Throughput check failed. Default filter modified or corrupt installation."
-    assert round(np.max(waveset_non_zero).value,2) == 7229.99, "Throughput check failed. Default filter modified or corrupt installation."
-    assert round(np.mean(bp_non_zero).value, 3) == 0.133, "Throughput check failed. Default filter modified or corrupt installation."
+    #   The filter min max values come from the first and last non zero elements in the VO SDSS r prime filter file.
+    assert round(np.min(waveset_non_zero).value,2) == 5342.0, "Throughput check failed. Default filter modified or corrupt installation."
+    assert round(np.max(waveset_non_zero).value,2) == 7350.99, "Throughput check failed. Default filter modified or corrupt installation."
+    #   The mean value is what we get with the current ETC throughput on the default filter.
+    #   Hard coded for consistency checks between versions.
+    #   This value updates if major components of the default toml update.
+    assert round(np.mean(bp_non_zero).value, 3) == 0.287, "Throughput check failed. Default filter modified or corrupt installation."
 
     return
 
@@ -126,32 +130,34 @@ def test_counts(telescope):
                        plot=True)
     obs.make_observation(flux=0.0, flux_units='AB', bg_flux=zodi_magnitude_normalization, bg_flux_units=u.ABmag)
 
-    #   For Version 1.0.0
+    #   Hard coded values are what we get when we run the ETC after confirming all checks are good.
+    #   The values maintain consistency between version updates, and make sure identical values are generated on the
+    #   test tomls if the configs change versions. This keeps track of configs version updates, updates to the default
+    #   setup and updates to any code.
     if telescope == "UM":
-        assert round(obs.source_counts.value) == 16230700376
-        assert round(obs.sky_counts.value) == 20
-        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 127400
+        assert round(obs.source_counts.value) == 37780689208
+        assert round(obs.sky_counts.value) == 47
+        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 194373
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
-        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.05
-        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 62
-        assert round(obs.calc_saturation_time().value, 6) == 3.6e-5
+        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.97
+        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 26
+        assert round(obs.calc_saturation_time().value, 6) == 1.6e-05
     if telescope == "test_UM":
-        assert round(obs.source_counts.value) == 16147078162
-        assert round(obs.sky_counts.value) == 20
-        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 127071
+        assert round(obs.source_counts.value) == 37586039266
+        assert round(obs.sky_counts.value) == 47
+        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 193871
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
-        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.05
-        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 62
-        assert round(obs.calc_saturation_time().value, 6) == 3.6e-5
-    #   Version for config_STP 1.0.0
+        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.96
+        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 27
+        assert round(obs.calc_saturation_time().value, 6) == 1.6e-5
     if telescope == "STP" or telescope == "test_STP":
-        assert round(obs.source_counts.value) == 64610011021
-        assert round(obs.sky_counts.value) == 79
-        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 254185
+        assert round(obs.source_counts.value) == 150394665022
+        assert round(obs.sky_counts.value) == 186
+        assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 387808
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
-        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 21.55
-        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 15
-        assert round(obs.calc_saturation_time().value, 6) == 9e-6
+        assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 22.47
+        assert round(obs.calc_int_time(1e6, exp_time=1.0*u.s).value) == 7
+        assert round(obs.calc_saturation_time().value, 6) == 4e-6
     return
 
 @pytest.mark.parametrize("telescope", ["UM", "STP", "test_UM", "test_STP"], indirect=True)
