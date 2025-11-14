@@ -67,6 +67,9 @@ class Observatory:
         self.sky_counts = 0
         self.well_depth = None
         self.bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
+        self.telescope_bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
+        self.instrument_bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
+
         self.qe_curves = []
         self.filters = []
         self.qe_wpeak = None
@@ -80,8 +83,6 @@ class Observatory:
         self.bg_magnitude = None        #   The AB magnitude of the background source (Requires PSF area to calculate)
         self.zero_mag_counts = None     #   Source counts for an AB mag = 0 PSF
 
-
-    # Add Quantum Efficiency properties
     def add_qe_curve(self, qe_fits_file, wave_unit='angstrom', num_curves=1, plot=False):
                 
         self.qe_curves.append(f"{qe_fits_file} x {num_curves}")
@@ -89,25 +90,14 @@ class Observatory:
         for num in range(num_curves-1):
             bp *= SpectralElement.from_file(qe_fits_file, wave_unit=wave_unit)
         self.bandpass *= bp
+        self.instrument_bandpass *= bp
 
         if plot==True:
             bp.plot()
     
-    # Add Sensor
-    def add_sensor(self, num_curves=1
-                   , gain_setting= 100  # (0.1 dB)
-                   , sensor_temp = 0 * u.Celsius
-                   , sensor_area = None
-                   , sensor_pixel_size = None
-                   , gain = None
-                   , dark_current = None
-                   , read_noise = None
-                   , well_depth = None
-                   , sensor_toml = None
-                   , support_data_path=None
-                   , plot=False
-                   , plot_title="Sensor"
-                   ):
+    def add_sensor(self, num_curves=1, gain_setting= 100, sensor_temp = 0 * u.Celsius, sensor_area = None,
+                   sensor_pixel_size = None, gain = None, dark_current = None, read_noise = None, well_depth = None,
+                   sensor_toml = None, support_data_path=None, plot=False, plot_title="Sensor"):
         
         if sensor_temp['unit'] != u.Celsius:
             sensor_temp.to(u.Celsius, equivalencies=u.temperature())
@@ -160,12 +150,13 @@ class Observatory:
         for num in range(num_curves-1):
             bp *= SpectralElement.from_file(sensor_qe, wave_unit=wave_unit)
         self.bandpass *= bp
+        self.instrument_bandpass *= bp
 
         if plot==True:
             bp.plot(title=plot_title)
         
-    # Add mirrors
-    def add_mirror(self, mirror_qe_fits_file, num_curves=1 ,wave_unit='nm', support_data_path=None, plot=False,plot_title="Mirror"):
+    def add_mirror(self, mirror_qe_fits_file, num_curves=1 ,wave_unit='nm', support_data_path=None, plot=False,
+                   plot_title="Mirror"):
 
         self.num_mirrors += num_curves
         mirror_qe_fits_file = prepend_if_not_none(support_data_path,mirror_qe_fits_file)
@@ -175,15 +166,16 @@ class Observatory:
         for num in range(num_curves-1):
             bp *= SpectralElement.from_file(mirror_qe_fits_file, wave_unit=wave_unit)
         self.bandpass *= bp
-        
+        self.telescope_bandpass *= bp
+
         if plot==True:
             bp.plot(title=plot_title)
 
         return
 
 
-    # Add filter properties
-    def add_filter(self, filter_fits_file, wave_unit='angstrom', num_curves=1, support_data_path=None, plot=False, plot_title="Filter"):
+    def add_filter(self, filter_fits_file, wave_unit='angstrom', num_curves=1, support_data_path=None, plot=False,
+                   plot_title="Filter"):
         
         filter_fits_file = prepend_if_not_none(support_data_path, filter_fits_file)
         self.filters.append(f"{filter_fits_file} x {num_curves}")
@@ -194,14 +186,15 @@ class Observatory:
             bp *= SpectralElement.from_file(filter_fits_file)
 
         self.bandpass *= bp
-        
+        self.instrument_bandpass *= bp
+
         if plot==True:
             bp.plot(title=plot_title)
     
-    # Calculate the mean PSF based on the mean wavelength of combined Spectral Elements
-    # OR from a user-selected wavelength
     def calc_PSF(self, wavelength=None, approx_type='sq', verbose=False):
-        
+        # Calculate the mean PSF based on the mean wavelength of combined Spectral Elements
+        # OR from a user-selected wavelength
+
         if not wavelength == None:
             psf_diameter = 2*1.22*wavelength*self.f_num
         else:
@@ -237,18 +230,10 @@ class Observatory:
             print(f"Number of PSF pixels: {self.num_psf_pixels}")
         return psf_diameter, self.num_psf_pixels
         
-    # NOTE: This function is "complete", meaning you would only need to add observational parameters
-    # to make an observation ('set_source', 'set_background', and 'make_observation').
-
-    def make_STP(self, plot=False
-                 , filters=True
-                 , sensor=True
-                 , mirrors=True
-                 , bg_sb = None
-                 , custom_toml_dir = None
-                 , support_data_dir = None
-                 # , left=4000 ,right=8000  # for plotting (units in angstroms)
-                 ):
+    def make_STP(self, plot=False, filters=True, sensor=True, mirrors=True, bg_sb = None, custom_toml_dir = None,
+                 support_data_dir = None):
+        # NOTE: This function is "complete", meaning you would only need to add observational parameters
+        # to make an observation ('set_source', 'set_background', and 'make_observation').
 
         if self.name == 'STP':
             data_telescope = config_stp.load_config_values("parsed")
@@ -352,7 +337,6 @@ class Observatory:
         if sensor:
             self.calc_PSF(wavelength=None, approx_type='sq')
 
-    # Create source for observation
     def set_source(self, source_pickles_file, source_z=0, support_data_path=None, plot=False):
 
         """
@@ -451,7 +435,8 @@ class Observatory:
         if plot==True:
             self.source_spectrum.plot()
 
-    def create_supernova_spectrum(self, epoch, source_z = 0.0, support_data_path=None, synphot_spectrum=True, plot=False):
+    def create_supernova_spectrum(self, epoch, source_z = 0.0, support_data_path=None, synphot_spectrum=True,
+                                  plot=False):
         """
         Read spectral data from a file and return wavelength and flux arrays for a given epoch.
 
@@ -518,7 +503,12 @@ class Observatory:
                 except:
                     print("Error: Could not calculate Background magnitude.")
                     exit()
-            bg_flux = self.bg_magnitude
+            bg_mag = self.bg_magnitude
+        else:
+            #   Assume bg_flux is surface brightness. Recalculate to get the magnitude.
+            #   Don't change the default magnitude in the wcc setting, change just for this calculation.
+            #   This makes the argument an override argument. The ETC default can be changed while initializing the ETC.
+            bg_mag = bg_flux - 2.5 * np.log10(self.psf_area.value)
 
         # Add Source
         self.source_spectrum.z = self.source_z  # make sure source spectra has proper redshift
@@ -526,60 +516,79 @@ class Observatory:
         if flux_units in ['vega', units.VEGAMAG]:
             vega = SourceSpectrum.from_vega()  # For unit conversion
             normalization_units = flux * units.VEGAMAG
-            sp_rn = self.source_spectrum.normalize(normalization_units
-                                                      , self.bandpass
-                                                      , vegaspec=vega
-                                                      # , force='taper'
-                                                      , force='extrap'
-                                                     )
 
         elif flux_units in ['AB', 'ABmag', 'AB mag', 'AB magnitude', u.ABmag]:
             normalization_units = flux * u.ABmag
-            sp_rn = self.source_spectrum.normalize(normalization_units
-                                                      , self.bandpass
-                                                      # , vegaspec=vega
-                                                      # , force='taper'
-                                                      , force='extrap'
-                                                     )
         else:
             raise NotImplementedError("User-defined source flux units not currently implemented")
 
-        sp_obs = Observation(sp_rn, self.bandpass, force='extrap')
-
-        if plot==True:
-            sp_obs.plot(title='Source')
-
         # Get countrate for observation
-        source_counts = sp_obs.countrate(area=self.surf_area) * u.electron/u.ct
-        self.source_counts = source_counts    #    Makes the counts in units of e/s
+        self.source_counts = self.calc_counts(self.source_spectrum, normalization_units, self.bandpass, self.bandpass, plot=plot, plot_title='Source')
 
-        # Add Background
         # Background needs to be normalized in the Johnson V band
         johnson_v_passband =  SpectralElement.from_filter('johnson_v')
-        bg_rn = self.background_spectrum.normalize( bg_flux * bg_flux_units
-                                                      , johnson_v_passband
-                                                      #, vegaspec=vega
-                                                      # , force='taper'
-                                                      , force='extrap'
-                                                     )
+        self.sky_counts = self.calc_counts(self.background_spectrum, bg_mag * bg_flux_units, johnson_v_passband, self.bandpass, plot=plot, plot_title='Background')
 
-        bg_obs = Observation(bg_rn, self.bandpass, force='extrap')
+        return self.source_counts, self.sky_counts
 
-        if plot==True:
-            bg_obs.plot(title='Background')
+    def get_telescope_counts(self, flux=0, flux_units=u.ABmag, bg_flux=None, bg_flux_units=u.ABmag, plot=False):
+        #   Calculate Background Normalization magnitude
+        if bg_flux is None:
+            if self.bg_magnitude is None:
+                try:
+                    self.calculate_bg_normalization_magnitude()
+                except:
+                    print("Error: Could not calculate Background magnitude.")
+                    exit()
+            bg_mag = self.bg_magnitude
+        else:
+            #   Assume bg_flux is surface brightness. Recalculate to get the magnitude.
+            #   Don't change the default magnitude in the wcc setting, change just for this calculation.
+            #   This makes the argument an override argument. The ETC default can be changed while initializing the ETC.
+            bg_mag = bg_flux - 2.5 * np.log10(self.psf_area.value)
+
+        # Add Source
+        self.source_spectrum.z = self.source_z  # make sure source spectra has proper redshift
+
+        if flux_units in ['vega', units.VEGAMAG]:
+            vega = SourceSpectrum.from_vega()  # For unit conversion
+            normalization_units = flux * units.VEGAMAG
+
+        elif flux_units in ['AB', 'ABmag', 'AB mag', 'AB magnitude', u.ABmag]:
+            normalization_units = flux * u.ABmag
+        else:
+            raise NotImplementedError("User-defined source flux units not currently implemented")
 
         # Get countrate for observation
-        background_counts = bg_obs.countrate(area=self.surf_area)* u.electron/u.ct
-        self.sky_counts = background_counts
+        w0 = self.bandpass.waveset[self.bandpass(self.bandpass.waveset) != 0][0]
+        w1 = self.bandpass.waveset[self.bandpass(self.bandpass.waveset) != 0][-1]
+        wset = np.logical_and(self.telescope_bandpass.waveset > w0, self.telescope_bandpass.waveset < w1)
+        binset = self.telescope_bandpass.waveset[wset]
+        telescope_source_counts = self.calc_counts(self.source_spectrum, normalization_units, self.bandpass, self.telescope_bandpass, binset=binset, plot=plot, plot_title='Source')
 
-        return source_counts, background_counts
+        # Background needs to be normalized in the Johnson V band
+        johnson_v_passband =  SpectralElement.from_filter('johnson_v')
+        telescope_sky_counts = self.calc_counts(self.background_spectrum, bg_mag * bg_flux_units, johnson_v_passband, self.telescope_bandpass, binset=binset, plot=plot, plot_title='Background')
+
+        return telescope_source_counts, telescope_sky_counts
+
+    def calc_counts(self, spec, flux, normalization_passband, throughput_passband, binset=None, plot=False, plot_title='Observation'):
+        count_spec = spec.normalize( flux, normalization_passband, force='extrap')
+        if binset is not None:
+            count_obs = Observation(count_spec, throughput_passband, force='extrap', binset=binset)
+        else:
+            count_obs = Observation(count_spec, throughput_passband, force='extrap')
+        counts = count_obs.countrate(area=self.surf_area)* u.electron/u.ct
+        if plot==True:
+            count_obs.plot(title=plot_title)
+        return counts
 
     def calc_saturation_time(self):
         # Calculates the time for any one pixel on a sensor to completely fill it's well-depth.
         # NOTE: Requires setting of source and/or background and performing 'make_observation'
         return self.well_depth / ( (self.source_counts / self.num_psf_pixels) + (self.sky_counts / self.num_psf_pixels) )
 
-    def calc_SNR(self, int_time, exp_time):
+    def calc_SNR(self, int_time, exp_time, get_variance=False):
         # Calculate SNR for a given total integration time with set frame exposure times
         # NOTE: Requires setting of source and/or background and performing 'make_observation'
 
@@ -587,7 +596,11 @@ class Observatory:
                               + ( self.dark_current + self.read_noise*self.read_noise/exp_time)*int_time*self.num_psf_pixels)
         snr = self.source_counts*int_time / total_noise
 
-        return snr.value
+        if get_variance==True:
+            var_list = [self.source_counts*int_time, self.sky_counts*int_time, self.dark_current*int_time*self.num_psf_pixels, + self.read_noise*self.read_noise/exp_time*int_time*self.num_psf_pixels]
+            return snr.value, var_list
+        else:
+            return snr.value
     
     def calc_int_time(self, snr, exp_time):
         # Calculate total integration time to achieve a given snr and frame exposure time
