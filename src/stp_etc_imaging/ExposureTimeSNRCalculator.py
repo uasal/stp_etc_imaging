@@ -503,8 +503,9 @@ class Observatory:
                 try:
                     self.calculate_bg_normalization_magnitude()
                 except:
-                    print("Error: Could not calculate Background magnitude.")
-                    exit()
+                    print("Error: Could not calculate Background magnitude from inputs, reverting to default SB of 22.5")
+                    self.bg_surface_brightness = 22.5
+                    self.calculate_bg_normalization_magnitude()
             bg_mag = self.bg_magnitude
         else:
             #   Assume bg_flux is surface brightness. Recalculate to get the magnitude.
