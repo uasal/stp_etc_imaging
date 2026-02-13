@@ -529,6 +529,9 @@ class Observatory:
         johnson_v_passband =  SpectralElement.from_filter('johnson_v')
         self.sky_counts = self.calc_counts(self.background_spectrum, bg_mag * bg_flux_units, johnson_v_passband, self.bandpass, plot=plot, plot_title='Background')
 
+        bg_mag = None
+        johnson_v_passband = None
+        normalization_units = None
         return self.source_counts, self.sky_counts
 
     def get_telescope_counts(self, flux=0, flux_units=u.ABmag, bg_flux=None, bg_flux_units=u.ABmag, plot=False):
@@ -581,6 +584,9 @@ class Observatory:
         counts = count_obs.countrate(area=self.surf_area)* u.electron/u.ct
         if plot==True:
             count_obs.plot(title=plot_title)
+        count_spec = None
+        count_obs = None
+
         return counts
 
     def calc_saturation_time(self):
