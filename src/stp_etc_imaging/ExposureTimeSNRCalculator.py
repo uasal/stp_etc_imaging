@@ -66,9 +66,11 @@ class Observatory:
         self.plate_scale = None
         self.sky_counts = 0
         self.well_depth = None
-        self.bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
-        self.telescope_bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
-        self.instrument_bandpass = SpectralElement(Box1D, amplitude=1, x_0=6000, width=7000)
+        self.spec_center = 6000
+        self.spec_width = 7000
+        self.bandpass = SpectralElement(Box1D, amplitude=1, x_0=self.spec_center, width=self.spec_width)
+        self.telescope_bandpass = SpectralElement(Box1D, amplitude=1, x_0=self.spec_center, width=self.spec_width)
+        self.instrument_bandpass = SpectralElement(Box1D, amplitude=1, x_0=self.spec_center, width=self.spec_width)
 
         self.qe_curves = []
         self.filters = []
