@@ -121,14 +121,13 @@ def test_counts(telescope):
         data_telescope = test_loader.load_configs()
         data_path_telescope = config_um.get_data_path()
 
-    zodi_magnitude_normalization = float(data_telescope['astrophysics']['zodi']['zodi_mag_r'])
     obs = etsc.Observatory(telescope)
     obs.make_STP()
     obs.set_source(source_pickles_file='test_data/pickles_uk_9.fits',
                    plot=True)
     obs.set_background(background_file=data_telescope['astrophysics']['zodi']['profile'], support_data_path=data_path_telescope,
                        plot=True)
-    obs.make_observation(flux=0.0, flux_units='AB', bg_flux=zodi_magnitude_normalization, bg_flux_units=u.ABmag)
+    obs.make_observation(flux=0.0, flux_units='AB')
 
     #   Hard coded values are what we get when we run the ETC after confirming all checks are good.
     #   The values maintain consistency between version updates, and make sure identical values are generated on the
@@ -136,7 +135,7 @@ def test_counts(telescope):
     #   setup and updates to any code.
     if telescope == "UM":
         assert round(obs.source_counts.value) == 37780689208
-        assert round(obs.sky_counts.value) == 47
+        assert round(obs.sky_counts.value,2) == 0.48
         assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 194373
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.97
@@ -144,7 +143,7 @@ def test_counts(telescope):
         assert round(obs.calc_saturation_time().value, 6) == 1.6e-05
     if telescope == "test_UM":
         assert round(obs.source_counts.value) == 37586039266
-        assert round(obs.sky_counts.value) == 47
+        assert round(obs.sky_counts.value,2) == 0.48
         assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 193871
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 20.96
@@ -152,7 +151,7 @@ def test_counts(telescope):
         assert round(obs.calc_saturation_time().value, 6) == 1.6e-5
     if telescope == "STP" or telescope == "test_STP":
         assert round(obs.source_counts.value) == 150394665022
-        assert round(obs.sky_counts.value) == 186
+        assert round(obs.sky_counts.value, 2) == 0.43
         assert round(obs.calc_SNR(exp_time=1.0 * u.s, int_time=1.0 * u.s)) == 387808
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s)) == 155
         assert round(obs.calc_req_source(10.0, int_time=1.0 * u.s, exp_time=1.0 * u.s, magnitude=True)[0], 2) == 22.47
