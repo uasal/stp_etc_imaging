@@ -193,17 +193,22 @@ class Observatory:
         if plot==True:
             bp.plot(title=plot_title)
     
-    def calc_PSF(self, wavelength=None, approx_type='sq', verbose=False):
+    def calc_PSF(self, wavelength=None, approx_type='sq', aperture_diameter=None, verbose=False):
         # Calculate the mean PSF based on the mean wavelength of combined Spectral Elements
         # OR from a user-selected wavelength
 
-        if not wavelength == None:
-            psf_diameter = 2*1.22*wavelength*self.f_num
+        if aperture_diameter is None:
+            if not wavelength == None:
+                psf_diameter = 2*1.22*wavelength*self.f_num
+            else:
+                wavelength = self.bandpass.wpeak()
+                self.qe_wpeak = wavelength
+                psf_diameter = (2*1.22*wavelength*self.f_num)
         else:
-            wavelength = self.bandpass.wpeak()
-            self.qe_wpeak = wavelength
-            psf_diameter = (2*1.22*wavelength*self.f_num)
-            
+            # Aperture diameter must be in milliarcseconds
+            # Convert from arcseconds to um
+            psf_diameter = (aperture_diameter.value / 1e3) / self.plate_scale * self.pixel_size
+
         self.psf_diameter = psf_diameter.to('um')
         
         # determine total number of pixels with the psf
