@@ -35,7 +35,6 @@ def test_contrast_to_snr():
     assert contrast_to_snr(1e-7, k=5) == pytest.approx(5e7)
 
 
-
 def test_load_targets_validation_and_overrides(tmp_path):
     good = {
         "observatory": "UM",
@@ -75,7 +74,6 @@ def test_load_targets_validation_and_overrides(tmp_path):
         load_targets(bad_path)
 
 
-
 def test_n_bands_scaling(tmp_path):
     target = {
         "name": "HD 12345",
@@ -92,9 +90,10 @@ def test_n_bands_scaling(tmp_path):
 
         result = exposure_time_for_target(target, observatory_name="UM")
 
+    called_kwargs = mock_obs.calc_int_time.call_args.kwargs
+    assert called_kwargs["snr"] == pytest.approx(3e7)
     assert result["t_exp_per_band_s"] == pytest.approx(120.0)
     assert result["t_exp_total_s"] == pytest.approx(360.0)
-
 
 
 def test_run_target_list_outputs_and_totals(tmp_path):
@@ -141,7 +140,6 @@ def test_run_target_list_outputs_and_totals(tmp_path):
     # 5 single-band targets + 1 two-band target, each 120s per-band
     assert summary["totals"]["n_targets"] == 6
     assert summary["totals"]["t_exp_total_s"] == pytest.approx(120.0 * 7)
-
 
 
 def test_budget_adapter_run_report_delegates(tmp_path):

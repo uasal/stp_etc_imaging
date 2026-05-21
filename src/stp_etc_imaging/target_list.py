@@ -29,7 +29,8 @@ Semantics:
 - `n_bands` assumes each band must independently reach the contrast floor, so
   `t_exp_total = n_bands * t_exp_per_band`.
 
-TODO: if `$UASAL_ARCHIVE` is set, add spectrum lookup from archive products.
+TODO: if `$UASAL_ARCHIVE` is set, resolve source spectra from archive products
+before falling back to Pickles templates so target-specific spectra can be used.
 """
 
 from __future__ import annotations
@@ -116,7 +117,7 @@ def _normalize_target(
         raise ValueError(f"Target '{merged['name']}' desired_contrast must be > 0")
     if merged["snr_k"] <= 0:
         raise ValueError(f"Target '{merged['name']}' snr_k must be > 0")
-    if merged["n_bands"] <= 0:
+    if merged["n_bands"] < 1:
         raise ValueError(f"Target '{merged['name']}' n_bands must be >= 1")
     if merged["frame_exp_time_s"] <= 0:
         raise ValueError(f"Target '{merged['name']}' frame_exp_time_s must be > 0")
@@ -148,7 +149,7 @@ def load_targets(yaml_path) -> dict:
         "frame_exp_time_s": float(raw.get("frame_exp_time_s", 60.0)),
     }
 
-    if defaults["n_bands"] <= 0:
+    if defaults["n_bands"] < 1:
         raise ValueError("Top-level n_bands must be >= 1")
     if defaults["snr_k"] <= 0:
         raise ValueError("Top-level snr_k must be > 0")
@@ -198,7 +199,7 @@ def _quantity_to_seconds(value: Any) -> float:
     if hasattr(value, "to"):
         try:
             return float(value.to(u.s).value)
-        except Exception:
+        except (AttributeError, TypeError, ValueError, u.UnitConversionError):
             pass
     if hasattr(value, "value"):
         return float(value.value)
@@ -264,7 +265,8 @@ def exposure_time_for_target(
 
     notes = merged_target["notes"]
     if spectral_type not in _SPECTRAL_TYPE_TO_PICKLES:
-        notes = (notes + " ").strip() + "Spectral type not in lookup; defaulted to G2V template."
+        suffix = "Spectral type not in lookup; defaulted to G2V template."
+        notes = f"{notes} {suffix}".strip()
 
     return {
         "name": merged_target["name"],
