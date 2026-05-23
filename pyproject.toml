@@ -29,6 +29,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev= ["config_stp @ git+https://github.com/uasal/config_stp.git", "config_um @ git+https://github.com/uasal/config_um.git", "config_stp_wcc @ git+https://github.com/uasal/config_stp_wcc.git", "config_um_wcc @ git+https://github.com/uasal/config_um_wcc.git", "pytest"]  
+budget = ["budgie @ git+https://github.com/uasal/budgie@develop"]
 
 [project.urls]
 Homepage = "https://github.com/uasal/stp_etc_imaging/blob/main/README.md"
