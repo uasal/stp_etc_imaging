@@ -40,6 +40,28 @@ Artifacts written in `output/`:
 - `exposure_time-summary.csv`
 - `exposure_time-summary.yaml`
 
+## Stellar spectra (Pickles)
+
+Stellar template files (`pickles_uk_*.fits`) come from the [`uasal/uasal_archive`](https://github.com/uasal/uasal_archive) repository (Git LFS) under `astr_obj_models/stars/pickles_models/dat_uvk/`.
+
+Set `$UASAL_ARCHIVE` to point at a local clone and the budget will auto-resolve the correct subdirectory:
+
+```bash
+git clone https://github.com/uasal/uasal_archive.git && export UASAL_ARCHIVE=$PWD/uasal_archive
+```
+
+You can also override the path at runtime:
+
+```python
+# Run-level override
+run_target_list("targets.yaml", "out/", pickles_support_dir="/data/pickles/dat_uvk")
+
+# Single-target override
+exposure_time_for_target(target, pickles_support_dir="/data/pickles/dat_uvk")
+```
+
+Resolution order: `pickles_support_dir` argument → `$UASAL_ARCHIVE/astr_obj_models/stars/pickles_models/dat_uvk` → CWD fallback (existing behavior when neither is set).
+
 ## Via budgie runner
 
 After the budgie companion PR lands (`douglase/copilot/refine-forest-rendering`):

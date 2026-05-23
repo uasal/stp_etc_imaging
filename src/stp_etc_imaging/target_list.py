@@ -29,14 +29,21 @@ Semantics:
 - `n_bands` assumes each band must independently reach the contrast floor, so
   `t_exp_total = n_bands * t_exp_per_band`.
 
-TODO: if `$UASAL_ARCHIVE` is set, resolve source spectra from archive products
-before falling back to Pickles templates so target-specific spectra can be used.
+Spectrum file resolution:
+  Pickles stellar template files (`pickles_uk_*.fits`) are resolved in this order:
+  1. `pickles_support_dir` argument passed to `run_target_list` or
+     `exposure_time_for_target` (or a per-target `pickles_support_dir` key).
+  2. `$UASAL_ARCHIVE/astr_obj_models/stars/pickles_models/dat_uvk` when the
+     environment variable is set.
+  3. `None` — the caller is expected to have placed files in the working directory
+     (existing fallback behavior is preserved).
 """
 
 from __future__ import annotations
 
 import csv
 import importlib.metadata
+import os
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +53,24 @@ import yaml
 from .ExposureTimeSNRCalculator import Observatory
 
 _REQUIRED_TARGET_FIELDS = ("name", "V_mag", "desired_contrast")
+
+_PICKLES_SUBDIR = "astr_obj_models/stars/pickles_models/dat_uvk"
+
+
+def _resolve_pickles_support_dir(explicit: str | None = None) -> str | None:
+    """Return the directory containing ``pickles_uk_*.fits``, with trailing slash.
+
+    Resolution order:
+      1. ``explicit`` argument if provided.
+      2. ``$UASAL_ARCHIVE/astr_obj_models/stars/pickles_models/dat_uvk``
+      3. ``None`` (caller may then symlink or place files in CWD).
+    """
+    if explicit:
+        return str(Path(explicit)) + "/"
+    archive = os.environ.get("UASAL_ARCHIVE")
+    if archive:
+        return str(Path(archive) / _PICKLES_SUBDIR) + "/"
+    return None
 
 _SPECTRAL_TYPE_TO_PICKLES = {
     "O5V": "pickles_uk_1.fits",
@@ -214,6 +239,7 @@ def exposure_time_for_target(
     frame_exp_time_s: float = 60.0,
     custom_toml_dir: str | None = None,
     support_data_dir: str | None = None,
+    pickles_support_dir: str | None = None,
 ) -> dict:
     """Compute ETC integration time for one target and return result summary."""
     merged_target = {
@@ -240,9 +266,20 @@ def exposure_time_for_target(
     spectral_type = merged_target["spectral_type"]
     source_pickles_file = _resolve_pickles_file(spectral_type)
 
+    resolved_pickles_dir = _resolve_pickles_support_dir(pickles_support_dir)
+    if resolved_pickles_dir is not None:
+        expected_path = Path(resolved_pickles_dir) / source_pickles_file
+        if not expected_path.exists():
+            raise FileNotFoundError(
+                f"Pickles file not found: {expected_path}. "
+                f"Ensure $UASAL_ARCHIVE points to a local clone of uasal/uasal_archive "
+                f"containing {_PICKLES_SUBDIR}/{source_pickles_file}."
+            )
+
     observatory.set_source(
         source_pickles_file=source_pickles_file,
         source_z=float(merged_target.get("source_z", 0.0)),
+        support_data_path=resolved_pickles_dir,
     )
 
     background_file, background_support_path = _background_for_target(
@@ -364,6 +401,7 @@ def run_target_list(
     observatory_name: str = "UM",
     snr_k_default: float = 3.0,
     n_bands_default: int = 1,
+    pickles_support_dir: str | None = None,
 ) -> dict:
     """Run ETC calculations for a target-list YAML and emit report artifacts."""
     loaded = load_targets(yaml_path)
@@ -387,12 +425,14 @@ def run_target_list(
         for target in targets:
             target_input = dict(target)
             target_input["classification"] = classification
+            effective_pickles_dir = target_input.pop("pickles_support_dir", pickles_support_dir)
             result = exposure_time_for_target(
                 target=target_input,
                 observatory_name=target_input.get("observatory", defaults["observatory"]),
                 n_bands=int(target_input.get("n_bands", defaults["n_bands"])),
                 snr_k=float(target_input.get("snr_k", defaults["snr_k"])),
                 frame_exp_time_s=float(target_input.get("frame_exp_time_s", defaults["frame_exp_time_s"])),
+                pickles_support_dir=effective_pickles_dir,
             )
             results.append(result)
             all_rows.append(result)
