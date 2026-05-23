@@ -260,7 +260,8 @@ def exposure_time_for_target(
         if not expected_pickles_path.exists():
             raise FileNotFoundError(
                 f"Missing Pickles spectrum file at '{expected_pickles_path}'. "
-                "Set UASAL_ARCHIVE to a uasal_archive clone or pass pickles_support_dir explicitly."
+                "Set UASAL_ARCHIVE to a clone of https://github.com/uasal/uasal_archive.git "
+                "or pass pickles_support_dir explicitly."
             )
 
     observatory.set_source(
