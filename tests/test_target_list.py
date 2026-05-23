@@ -227,5 +227,5 @@ def test_exposure_time_for_target_raises_when_pickles_missing(tmp_path, monkeypa
         mock_obs = obs_cls.return_value
         _mock_observatory(mock_obs)
 
-        with pytest.raises(FileNotFoundError, match="UASAL_ARCHIVE"):
+        with pytest.raises(FileNotFoundError, match=r"Pickles file not found.*UASAL_ARCHIVE"):
             exposure_time_for_target(target, observatory_name="UM")
