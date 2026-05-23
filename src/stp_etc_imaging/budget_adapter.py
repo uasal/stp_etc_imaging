@@ -20,7 +20,8 @@ class ExposureTimeBudget(Budget):
                 "budgie is required: pip install 'budgie @ git+https://github.com/uasal/budgie@develop'"
             )
         super().__init__(name)
-        self.pickles_support_dir = getattr(self, "pickles_support_dir", None)
+        if not hasattr(self, "pickles_support_dir"):
+            self.pickles_support_dir = None
 
     def run_report(self, output_dir):
         from pathlib import Path

@@ -182,7 +182,13 @@ def _resolve_pickles_file(spectral_type: str) -> str:
 
 
 def _resolve_pickles_support_dir(explicit: str | None = None) -> str | None:
-    """Return the directory containing pickles_uk_*.fits."""
+    """Return the directory containing pickles_uk_*.fits.
+
+    Resolution order:
+      1. `explicit` argument if provided.
+      2. $UASAL_ARCHIVE/astr_obj_models/stars/pickles_models/dat_uvk
+      3. None (caller may then symlink or place files in CWD).
+    """
     if explicit:
         return str(Path(explicit))
     archive = os.environ.get("UASAL_ARCHIVE")
@@ -258,10 +264,16 @@ def exposure_time_for_target(
     if resolved_pickles_support_dir is not None:
         expected_pickles_path = Path(resolved_pickles_support_dir) / source_pickles_file
         if not expected_pickles_path.exists():
+            resolution_hint = (
+                "Verify pickles_support_dir or set UASAL_ARCHIVE to a clone of "
+                "https://github.com/uasal/uasal_archive.git."
+                if pickles_support_dir
+                else "Set UASAL_ARCHIVE to a clone of https://github.com/uasal/uasal_archive.git "
+                "or pass pickles_support_dir explicitly."
+            )
             raise FileNotFoundError(
                 f"Missing Pickles spectrum file at '{expected_pickles_path}'. "
-                "Set UASAL_ARCHIVE to a clone of https://github.com/uasal/uasal_archive.git "
-                "or pass pickles_support_dir explicitly."
+                f"{resolution_hint}"
             )
 
     observatory.set_source(

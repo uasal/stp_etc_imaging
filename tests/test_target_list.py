@@ -100,8 +100,7 @@ def test_n_bands_scaling(tmp_path):
 def test_resolve_pickles_support_dir_from_env(tmp_path, monkeypatch):
     monkeypatch.setenv("UASAL_ARCHIVE", str(tmp_path))
     resolved = _resolve_pickles_support_dir()
-    assert resolved is not None
-    assert resolved.endswith("astr_obj_models/stars/pickles_models/dat_uvk")
+    assert resolved == str(tmp_path / "astr_obj_models/stars/pickles_models/dat_uvk")
 
 
 def test_resolve_pickles_support_dir_explicit_overrides_env(tmp_path, monkeypatch):
@@ -134,7 +133,9 @@ def test_exposure_time_for_target_passes_support_path(tmp_path, monkeypatch):
         _mock_observatory(mock_obs)
         exposure_time_for_target(target, observatory_name="UM")
 
-    assert mock_obs.set_source.call_args.kwargs["support_data_path"] == str(pickles_dir)
+    set_source_kwargs = mock_obs.set_source.call_args.kwargs
+    assert set_source_kwargs["support_data_path"] == str(pickles_dir)
+    assert set_source_kwargs["source_pickles_file"] == "pickles_uk_26.fits"
 
 
 def test_exposure_time_for_target_raises_when_pickles_missing(tmp_path, monkeypatch):
