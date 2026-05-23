@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from stp_etc_imaging.target_list import (
+    _resolve_pickles_support_dir,
     contrast_to_snr,
     exposure_time_for_target,
     load_targets,
@@ -96,6 +97,67 @@ def test_n_bands_scaling(tmp_path):
     assert result["t_exp_total_s"] == pytest.approx(360.0)
 
 
+def test_resolve_pickles_support_dir_from_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("UASAL_ARCHIVE", str(tmp_path))
+    resolved = _resolve_pickles_support_dir()
+    assert resolved is not None
+    assert resolved.endswith("astr_obj_models/stars/pickles_models/dat_uvk")
+
+
+def test_resolve_pickles_support_dir_explicit_overrides_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("UASAL_ARCHIVE", str(tmp_path / "archive"))
+    explicit_dir = tmp_path / "custom_pickles"
+    assert _resolve_pickles_support_dir(str(explicit_dir)) == str(explicit_dir)
+
+
+def test_resolve_pickles_support_dir_missing_returns_none(monkeypatch):
+    monkeypatch.delenv("UASAL_ARCHIVE", raising=False)
+    assert _resolve_pickles_support_dir() is None
+
+
+def test_exposure_time_for_target_passes_support_path(tmp_path, monkeypatch):
+    monkeypatch.setenv("UASAL_ARCHIVE", str(tmp_path))
+    pickles_dir = tmp_path / "astr_obj_models/stars/pickles_models/dat_uvk"
+    pickles_dir.mkdir(parents=True)
+    (pickles_dir / "pickles_uk_26.fits").touch()
+
+    target = {
+        "name": "HD 12345",
+        "classification": "exoplanet_host_stars",
+        "V_mag": 5.2,
+        "desired_contrast": 1e-7,
+        "spectral_type": "G2V",
+    }
+
+    with patch("stp_etc_imaging.target_list.Observatory") as obs_cls:
+        mock_obs = obs_cls.return_value
+        _mock_observatory(mock_obs)
+        exposure_time_for_target(target, observatory_name="UM")
+
+    assert mock_obs.set_source.call_args.kwargs["support_data_path"] == str(pickles_dir)
+
+
+def test_exposure_time_for_target_raises_when_pickles_missing(tmp_path, monkeypatch):
+    monkeypatch.setenv("UASAL_ARCHIVE", str(tmp_path))
+    target = {
+        "name": "HD 12345",
+        "classification": "exoplanet_host_stars",
+        "V_mag": 5.2,
+        "desired_contrast": 1e-7,
+        "spectral_type": "G2V",
+    }
+
+    with patch("stp_etc_imaging.target_list.Observatory") as obs_cls:
+        mock_obs = obs_cls.return_value
+        _mock_observatory(mock_obs)
+        with pytest.raises(FileNotFoundError) as excinfo:
+            exposure_time_for_target(target, observatory_name="UM")
+
+    message = str(excinfo.value)
+    assert "pickles_uk_26.fits" in message
+    assert "UASAL_ARCHIVE" in message
+
+
 def test_run_target_list_outputs_and_totals(tmp_path):
     input_yaml = {
         "observatory": "UM",
@@ -160,3 +222,4 @@ def test_budget_adapter_run_report_delegates(tmp_path):
     called_yaml_path, called_output_dir = runner.call_args.args
     assert called_yaml_path == tmp_path / "targets.yaml"
     assert called_output_dir == tmp_path / "reports"
+    assert runner.call_args.kwargs["pickles_support_dir"] is None

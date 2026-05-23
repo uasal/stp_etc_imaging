@@ -35,6 +35,19 @@ from stp_etc_imaging.target_list import run_target_list
 run_target_list("targets.yaml", "output/", observatory_name="UM")
 ```
 
+### Stellar spectra (Pickles)
+
+Stellar template files (`pickles_uk_*.fits`) come from `uasal/uasal_archive` (git LFS). Set
+`UASAL_ARCHIVE` to your local clone and the budget code will automatically resolve:
+`astr_obj_models/stars/pickles_models/dat_uvk/`.
+
+```bash
+git clone https://github.com/uasal/uasal_archive.git && export UASAL_ARCHIVE=$PWD/uasal_archive
+```
+
+You can also override at runtime with `pickles_support_dir` in `run_target_list(...)`
+or `exposure_time_for_target(...)`.
+
 Artifacts written in `output/`:
 - `exposure_time-report.md`
 - `exposure_time-summary.csv`
