@@ -15,9 +15,10 @@ from synphot import units, SourceSpectrum, SpectralElement, Observation, Empiric
 from synphot.models import BlackBodyNorm1D, GaussianFlux1D, Box1D
 import numpy as np
 from numpy import sqrt
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, RegularGridInterpolator
 import pandas as pd
 from math import ceil, floor, log10
+from . import get_data_path
 
 ### Defining Classes
 
@@ -46,6 +47,8 @@ class Observatory:
     attribute = "space observatory"
     
     def __init__(self, telescope_name):
+
+        self.data_path = get_data_path()
 
         self.name = telescope_name
         self.diameter_primary = None
@@ -84,6 +87,8 @@ class Observatory:
         self.bg_surface_brightness = None   #   The surface brightness of the background source
         self.bg_magnitude = None        #   The AB magnitude of the background source (Requires PSF area to calculate)
         self.zero_mag_counts = None     #   Source counts for an AB mag = 0 PSF
+        self.encircled_energy = 1.0
+        self.jitter_interpolator = None
 
     def add_qe_curve(self, qe_fits_file, wave_unit='angstrom', num_curves=1, plot=False):
                 
@@ -163,8 +168,10 @@ class Observatory:
         self.num_mirrors += num_curves
         mirror_qe_fits_file = prepend_if_not_none(support_data_path,mirror_qe_fits_file)
         self.qe_curves.append(f"{mirror_qe_fits_file} x {num_curves}")
-        
-        bp = SpectralElement.from_file(mirror_qe_fits_file, wave_unit=wave_unit)
+        try:
+            bp = SpectralElement.from_file(mirror_qe_fits_file, wave_unit=wave_unit)
+        except:
+            bp = SpectralElement.from_file(mirror_qe_fits_file, wave_unit=u.nm)
         for num in range(num_curves-1):
             bp *= SpectralElement.from_file(mirror_qe_fits_file, wave_unit=wave_unit)
         self.bandpass *= bp
@@ -193,17 +200,25 @@ class Observatory:
         if plot==True:
             bp.plot(title=plot_title)
     
-    def calc_PSF(self, wavelength=None, approx_type='sq', verbose=False):
+    def calc_PSF(self, wavelength=None, approx_type='sq', aperture_diameter=None, jitter=None, verbose=False):
         # Calculate the mean PSF based on the mean wavelength of combined Spectral Elements
         # OR from a user-selected wavelength
 
-        if not wavelength == None:
-            psf_diameter = 2*1.22*wavelength*self.f_num
+        if aperture_diameter is None:
+            if not wavelength == None:
+                psf_diameter = 2*1.22*wavelength*self.f_num
+            else:
+                #   TODO: This implementation is definitely broken. Current workaround, always pass aperture_diameter.
+                #   Need to fix this before update.
+                wavelength = self.bandpass.wpeak()
+                self.qe_wpeak = wavelength
+                psf_diameter = (2*1.22*wavelength*self.f_num)
+                aperture_diameter = psf_diameter.to(u.um) / self.pixel_size / u.pix * self.plate_scale * 1e3
         else:
-            wavelength = self.bandpass.wpeak()
-            self.qe_wpeak = wavelength
-            psf_diameter = (2*1.22*wavelength*self.f_num)
-            
+            # Aperture diameter must be in milliarcseconds
+            # Convert from arcseconds to um
+            psf_diameter = (aperture_diameter.value / 1e3) / self.plate_scale * self.pixel_size * u.pix
+
         self.psf_diameter = psf_diameter.to('um')
         
         # determine total number of pixels with the psf
@@ -227,7 +242,7 @@ class Observatory:
 
         #   Calculate the total magnitude of the background spectrum given the PSF area (in square arcseconds)
         self.calculate_bg_normalization_magnitude()
-
+        self.set_encircled_energy(aperture_diameter= aperture_diameter.value, jitter=jitter)
         if verbose:
             print(f"Number of PSF pixels: {self.num_psf_pixels}")
         return psf_diameter, self.num_psf_pixels
@@ -595,18 +610,18 @@ class Observatory:
     def calc_saturation_time(self):
         # Calculates the time for any one pixel on a sensor to completely fill it's well-depth.
         # NOTE: Requires setting of source and/or background and performing 'make_observation'
-        return self.well_depth / ( (self.source_counts / self.num_psf_pixels) + (self.sky_counts / self.num_psf_pixels) )
+        return self.well_depth / ( (self.encircled_energy * self.source_counts / self.num_psf_pixels) + (self.sky_counts / self.num_psf_pixels) )
 
     def calc_SNR(self, int_time, exp_time, get_variance=False):
         # Calculate SNR for a given total integration time with set frame exposure times
         # NOTE: Requires setting of source and/or background and performing 'make_observation'
 
-        total_noise = sqrt( self.source_counts*int_time + self.sky_counts*int_time
+        total_noise = sqrt( self.encircled_energy * self.source_counts*int_time + self.sky_counts*int_time
                               + ( self.dark_current + self.read_noise*self.read_noise/exp_time)*int_time*self.num_psf_pixels)
-        snr = self.source_counts*int_time / total_noise
+        snr = self.encircled_energy * self.source_counts*int_time / total_noise
 
         if get_variance==True:
-            var_list = [self.source_counts*int_time, self.sky_counts*int_time, self.dark_current*int_time*self.num_psf_pixels, + self.read_noise*self.read_noise/exp_time*int_time*self.num_psf_pixels]
+            var_list = [self.encircled_energy * self.source_counts*int_time, self.sky_counts*int_time, self.dark_current*int_time*self.num_psf_pixels, + self.read_noise*self.read_noise/exp_time*int_time*self.num_psf_pixels]
             return snr.value, var_list
         else:
             return snr.value
@@ -616,8 +631,8 @@ class Observatory:
         # NOTE: Requires setting of source and/or background and performing 'make_observation'
         
         snr = snr * sqrt(1.0 * u.ct)  # to ensure units match
-        A = ((self.source_counts/snr)**2) * exp_time
-        B = self.source_counts*exp_time + self.sky_counts*exp_time + ( self.dark_current*exp_time + self.read_noise*self.read_noise)*self.num_psf_pixels
+        A = ((self.encircled_energy * self.source_counts/snr)**2) * exp_time
+        B = self.encircled_energy * self.source_counts*exp_time + self.sky_counts*exp_time + ( self.dark_current*exp_time + self.read_noise*self.read_noise)*self.num_psf_pixels
         int_time = B/A
 
         return int_time * u.electron / u.ct
@@ -643,7 +658,7 @@ class Observatory:
         A = int_time/snr/snr
         B = -1
         C = -1 * (self.sky_counts + self.num_psf_pixels * ( self.dark_current + self.read_noise*self.read_noise/exp_time))
-        req_source_counts = (-B/2/A.value)*(1+sqrt(1-(4*A*C/B/B).value))
+        req_source_counts = (-B/2/A.value)*(1+sqrt(1-(4*A*C/B/B).value)) / self.encircled_energy
 
         if magnitude==False:
             return req_source_counts
@@ -663,9 +678,54 @@ class Observatory:
         self.bg_magnitude = self.bg_surface_brightness - 2.5 * np.log10(self.psf_area.value)
         return
 
+    def make_jitter_interpolator(self):
+
+        data = np.loadtxt(f'{self.data_path}encircled_energy_SLOAN_SDSSrprime_filter_AgMirrors.csv')
+
+        r_vals = np.unique(data[:, 0])
+        jitter_vals = np.unique(data[:, 1])
+        EEvals = data[:, 2]
+
+        EE = EEvals.reshape(len(jitter_vals), len(r_vals))
+        self.jitter_interpolator = RegularGridInterpolator((jitter_vals, r_vals), EE,bounds_error=False,fill_value=None)
+        r_vals = None
+        jitter_vals = None
+        EE = None
+
+        return
+
+    def set_encircled_energy(self, aperture_diameter=70, jitter=None):
+        """
+        Calculates the encircled energy factor for the given PSF.
+        :param aperture_diameter: Aperture over which Encircled Energy is calculated, default 70 milliarcseconds
+        :param jitter: jitter for the whole system, if no value is provided, defaults to the observatory jitter default
+        :return: None
+        """
+        if self.jitter_interpolator is None:
+            self.make_jitter_interpolator()
+
+        #   Note: A jitter of None doesn't mean no jitter, it means default to the observatory jitter.
+        #   To compute no jitter, pass jitter=0 instead.
+        if jitter is None:
+            jitter = self.jitter_rms['value']*1e3   #   Convert toml default value in arcseconds to milliarcseconds
+
+        pts = np.column_stack([
+            np.atleast_1d(jitter),
+            np.atleast_1d(aperture_diameter)
+        ])
+
+        self.encircled_energy = self.jitter_interpolator(pts)
+
+        return
+
     def set_gain(self, gain):
         # Set gain
         self.gain = gain
+
+    def set_bg_sb(self,bg_sb=22.5):
+        self.bg_surface_brightness = bg_sb
+        self.calculate_bg_normalization_magnitude()
+        return
 
     def set_dark_current(self, dark_current):
         # Set dark current
