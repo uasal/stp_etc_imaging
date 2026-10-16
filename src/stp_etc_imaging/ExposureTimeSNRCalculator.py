@@ -308,12 +308,21 @@ class Observatory:
 
 
         self.data_observatory = data_telescope
-        self.data_wcc = config_stp_wcc.load_config_values("parsed")
+        if self.name in ['UM', 'test_UM']:
+            self.data_wcc = config_um_wcc.load_config_values("parsed")
+            support_data_wcc = config_um_wcc.get_data_path()
+        else:
+            self.data_wcc = config_stp_wcc.load_config_values("parsed")
+            support_data_wcc = config_stp_wcc.get_data_path()
+
+        #   Select the sensor section. If 'sensor_name' is provided, use the corresponding [sensor.<sensor_name>] table.
+        self.data_sensor = self.data_wcc['common_params']['sensor']
+        if 'sensor_name' in self.data_sensor:
+            self.data_sensor = self.data_sensor[self.data_sensor['sensor_name']]
 
         #   Setup Paths
 
         self.support_data_observatory = support_data_telescope if support_data_telescope.endswith('/') else support_data_telescope + '/'
-        support_data_wcc = config_stp_wcc.get_data_path()
         self.jitter_rms         = self.data_observatory['observatory']['pointing']['jitter_rms']
         self.diameter_primary = self.data_observatory['telescope']['optics']['m1']['aper_clear_OD']
         self.surf_area = np.pi * (0.5 * self.diameter_primary['value']) ** 2
@@ -331,8 +340,8 @@ class Observatory:
 
         #   Fixed units here, when passing this area to countrate(area=<>) the default assumption is cm^2
         self.surf_area *= (u.meter * u.meter)
-        self.sensor_temp        = self.data_wcc['common_params']['sensor']['temp_nominal']
-        self.gain_setting = self.data_wcc['common_params']['sensor']['gain']
+        self.sensor_temp        = self.data_sensor['temp_nominal']
+        self.gain_setting = self.data_sensor['gain']
         if bg_sb is None:
             self.bg_surface_brightness = float(self.data_observatory['astrophysics']['zodi']['zodi_mag_r'])
         else:
@@ -351,7 +360,7 @@ class Observatory:
                            , dark_current = None
                            , read_noise = None
                            , well_depth = None
-                           , sensor_toml = self.data_wcc['common_params']['sensor']
+                           , sensor_toml = self.data_sensor
                            , support_data_path=support_data_wcc
                            , plot=plot
                            , plot_title = "ZWO_ASI6200MM"
