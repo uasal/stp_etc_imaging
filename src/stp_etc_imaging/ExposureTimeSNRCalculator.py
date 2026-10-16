@@ -140,7 +140,10 @@ class Observatory:
         if sensor_area is None:
             sensor_area = 36*u.mm * 24*u.mm
         if sensor_pixel_size is None:
-            sensor_pixel_size = 3.76*(u.um/u.pix)
+            if sensor_toml is not None:
+                sensor_pixel_size = (sensor_toml['pixel_size']['value'] * u.Unit(sensor_toml['pixel_size']['unit'])).to(u.um) / u.pix
+            else:
+                sensor_pixel_size = 3.76*(u.um/u.pix)
 
         #   plate scale [arcsecond/pixel] = pixel size / (telescope diameter * f#)  * ( 206265 * arcseconds/radian)
         self.plate_scale = (sensor_pixel_size.value * 1e-6 /self.diameter_primary['value'] / self.f_num * 206265)
@@ -363,7 +366,7 @@ class Observatory:
                            , sensor_toml = self.data_sensor
                            , support_data_path=support_data_wcc
                            , plot=plot
-                           , plot_title = "ZWO_ASI6200MM"
+                           , plot_title = self.data_sensor['qe'].split('/')[-2]   # Sensor directory name, e.g. ZWO_ASI6200MM
                            )
 
         # Add mirrors
