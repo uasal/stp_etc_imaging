@@ -38,7 +38,11 @@ except:
 try:
     import config_stp_wcc
 except:
-    logger.warning("config_stp could not be imported. Please check installation.")
+    logger.warning("config_stp_wcc could not be imported. Please check installation.")
+try:
+    import config_um_wcc
+except:
+    logger.warning("config_um_wcc could not be imported. Please check installation.")
 
 import utils_config
 data_stp_wcc = config_stp_wcc.load_config_values()
