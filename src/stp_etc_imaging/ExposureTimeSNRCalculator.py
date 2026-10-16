@@ -19,21 +19,30 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 import pandas as pd
 from math import ceil, floor, log10
 from . import get_data_path
+import logging
+import sys
+
+#   Module level logger. Handlers are attached when the first Observatory object is created.
+logger = logging.getLogger(__name__)
 
 ### Defining Classes
 
 try:
     import config_stp
 except:
-    print("config_stp could not be imported. Please check installation.")
+    logger.warning("config_stp could not be imported. Please check installation.")
 try:
     import config_um
 except:
-    print("config_um could not be imported. Please check installation.")
+    logger.warning("config_um could not be imported. Please check installation.")
 try:
     import config_stp_wcc
 except:
-    print("config_stp could not be imported. Please check installation.")
+    logger.warning("config_stp_wcc could not be imported. Please check installation.")
+try:
+    import config_um_wcc
+except:
+    logger.warning("config_um_wcc could not be imported. Please check installation.")
 
 import utils_config
 data_stp_wcc = config_stp_wcc.load_config_values()
@@ -46,7 +55,23 @@ class Observatory:
     
     attribute = "space observatory"
     
-    def __init__(self, telescope_name):
+    def __init__(self, telescope_name, logger=None, log_file=None):
+
+        #   Use the user supplied logger, else default to the module logger writing to the terminal/notebook console.
+        if logger is None:
+            logger = logging.getLogger(__name__)
+            if not logger.handlers:
+                console_handler = logging.StreamHandler(sys.stdout)
+                console_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+                logger.addHandler(console_handler)
+                logger.setLevel(logging.INFO)
+                logger.propagate = False
+        #   Optionally also log to a file
+        if log_file is not None:
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
+            logger.addHandler(file_handler)
+        self.logger = logger
 
         self.data_path = get_data_path()
 
@@ -115,7 +140,10 @@ class Observatory:
         if sensor_area is None:
             sensor_area = 36*u.mm * 24*u.mm
         if sensor_pixel_size is None:
-            sensor_pixel_size = 3.76*(u.um/u.pix)
+            if sensor_toml is not None:
+                sensor_pixel_size = (sensor_toml['pixel_size']['value'] * u.Unit(sensor_toml['pixel_size']['unit'])).to(u.um) / u.pix
+            else:
+                sensor_pixel_size = 3.76*(u.um/u.pix)
 
         #   plate scale [arcsecond/pixel] = pixel size / (telescope diameter * f#)  * ( 206265 * arcseconds/radian)
         self.plate_scale = (sensor_pixel_size.value * 1e-6 /self.diameter_primary['value'] / self.f_num * 206265)
@@ -244,7 +272,7 @@ class Observatory:
         self.calculate_bg_normalization_magnitude()
         self.set_encircled_energy(aperture_diameter= aperture_diameter.value, jitter=jitter)
         if verbose:
-            print(f"Number of PSF pixels: {self.num_psf_pixels}")
+            self.logger.info(f"Number of PSF pixels: {self.num_psf_pixels}")
         return psf_diameter, self.num_psf_pixels
         
     def make_STP(self, plot=False, filters=True, sensor=True, mirrors=True, bg_sb = None, custom_toml_dir = None,
@@ -271,10 +299,10 @@ class Observatory:
             support_data_telescope = config_um.get_data_path()
         if self.name == 'custom_toml':
             if custom_toml_dir is None:
-                print("Directory for custom toml files must be provided. Exiting...")
+                self.logger.error("Directory for custom toml files must be provided. Exiting...")
                 exit()
             if support_data_dir is None:
-                print("Support data directory for custom configuration must be provided. Exiting...")
+                self.logger.error("Support data directory for custom configuration must be provided. Exiting...")
                 exit()
             custom_loader = utils_config.ConfigLoader(custom_toml_dir, "parsed")
             data_telescope = custom_loader.load_configs()
@@ -283,12 +311,21 @@ class Observatory:
 
 
         self.data_observatory = data_telescope
-        self.data_wcc = config_stp_wcc.load_config_values("parsed")
+        if self.name in ['UM', 'test_UM']:
+            self.data_wcc = config_um_wcc.load_config_values("parsed")
+            support_data_wcc = config_um_wcc.get_data_path()
+        else:
+            self.data_wcc = config_stp_wcc.load_config_values("parsed")
+            support_data_wcc = config_stp_wcc.get_data_path()
+
+        #   Select the sensor section. If 'sensor_name' is provided, use the corresponding [sensor.<sensor_name>] table.
+        self.data_sensor = self.data_wcc['common_params']['sensor']
+        if 'sensor_name' in self.data_sensor:
+            self.data_sensor = self.data_sensor[self.data_sensor['sensor_name']]
 
         #   Setup Paths
 
         self.support_data_observatory = support_data_telescope if support_data_telescope.endswith('/') else support_data_telescope + '/'
-        support_data_wcc = config_stp_wcc.get_data_path()
         self.jitter_rms         = self.data_observatory['observatory']['pointing']['jitter_rms']
         self.diameter_primary = self.data_observatory['telescope']['optics']['m1']['aper_clear_OD']
         self.surf_area = np.pi * (0.5 * self.diameter_primary['value']) ** 2
@@ -306,8 +343,8 @@ class Observatory:
 
         #   Fixed units here, when passing this area to countrate(area=<>) the default assumption is cm^2
         self.surf_area *= (u.meter * u.meter)
-        self.sensor_temp        = self.data_wcc['common_params']['sensor']['temp_nominal']
-        self.gain_setting = self.data_wcc['common_params']['sensor']['gain']
+        self.sensor_temp        = self.data_sensor['temp_nominal']
+        self.gain_setting = self.data_sensor['gain']
         if bg_sb is None:
             self.bg_surface_brightness = float(self.data_observatory['astrophysics']['zodi']['zodi_mag_r'])
         else:
@@ -316,7 +353,7 @@ class Observatory:
         if sensor:
             # Add STP sensor
             if plot:
-                print("Adding Sensor")
+                self.logger.info("Adding Sensor")
             self.add_sensor( num_curves=1
                            , gain_setting= self.gain_setting # (0.1 dB)
                            , sensor_temp = self.sensor_temp
@@ -326,17 +363,17 @@ class Observatory:
                            , dark_current = None
                            , read_noise = None
                            , well_depth = None
-                           , sensor_toml = self.data_wcc['common_params']['sensor']
+                           , sensor_toml = self.data_sensor
                            , support_data_path=support_data_wcc
                            , plot=plot
-                           , plot_title = "ZWO_ASI6200MM"
+                           , plot_title = self.data_sensor['qe'].split('/')[-2]   # Sensor directory name, e.g. ZWO_ASI6200MM
                            )
 
         # Add mirrors
 
         if mirrors:
             if plot:
-                print("Adding Mirrors")
+                self.logger.info("Adding Mirrors")
             self.add_mirror(self.data_observatory['telescope']['optics']['m1']['coating_refl'], num_curves=1, support_data_path=self.support_data_observatory, plot=plot, plot_title="M1")   # M1
             self.add_mirror(self.data_observatory['telescope']['optics']['m2']['coating_refl'], num_curves=1, support_data_path=self.support_data_observatory, plot=plot, plot_title="M2")   # M2
             self.add_mirror(self.data_observatory['telescope']['optics']['m3']['coating_refl'], num_curves=1, support_data_path=self.support_data_observatory, plot=plot, plot_title="M3")   # M3
@@ -345,7 +382,7 @@ class Observatory:
 
         if filters:
             if plot:
-                print("Adding Filters")
+                self.logger.info("Adding Filters")
             # Add filter (Option for not using a filter)
             self.add_filter(filter_fits_file=self.data_wcc['WCC_ETC']['filters']['filter'], wave_unit='angstrom'
                             , num_curves=1, support_data_path=support_data_wcc, plot=plot, plot_title=self.data_wcc['WCC_ETC']['filters']['filter'])
@@ -518,7 +555,7 @@ class Observatory:
                 try:
                     self.calculate_bg_normalization_magnitude()
                 except:
-                    print("Error: Could not calculate Background magnitude from inputs, reverting to default SB of 22.5")
+                    self.logger.error("Could not calculate Background magnitude from inputs, reverting to default SB of 22.5")
                     self.bg_surface_brightness = 22.5
                     self.calculate_bg_normalization_magnitude()
             bg_mag = self.bg_magnitude
@@ -559,7 +596,7 @@ class Observatory:
                 try:
                     self.calculate_bg_normalization_magnitude()
                 except:
-                    print("Error: Could not calculate Background magnitude.")
+                    self.logger.error("Could not calculate Background magnitude.")
                     exit()
             bg_mag = self.bg_magnitude
         else:
@@ -750,7 +787,7 @@ class Observatory:
     def get_info(self):
         # Get info as strings
         for key, value in self.__dict__.items():
-            print(f'***__{key}={value}', '\n')
+            self.logger.info(f'***__{key}={value}\n')
 
     def as_array(self):
         # Get info as array
