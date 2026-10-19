@@ -706,7 +706,7 @@ class Observatory:
             return req_source_counts
         
         elif magnitude==True:            
-            mag = -2.5 * log10(req_source_counts/self.zero_mag_counts.value)
+            mag = -2.5 * np.log10(req_source_counts/self.zero_mag_counts.value)
             return mag, self.filters
 
 
