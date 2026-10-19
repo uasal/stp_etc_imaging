@@ -676,10 +676,14 @@ class Observatory:
         return int_time * u.electron / u.ct
 
     def calc_zero_mag(self, flux=0, plot=False):
-        zero_mag_counts, sky_counts = self.make_observation(flux=flux, flux_units=u.ABmag
-                                                            , bg_flux=self.bg_magnitude, bg_flux_units=u.ABmag
+        #   make_observation overwrites the source and sky counts, preserve the current observation.
+        #   bg_flux=None uses the existing background magnitude. Passing self.bg_magnitude would apply the PSF area twice.
+        source_counts, sky_counts = self.source_counts, self.sky_counts
+        zero_mag_counts, _ = self.make_observation(flux=flux, flux_units=u.ABmag
+                                                            , bg_flux=None, bg_flux_units=u.ABmag
                                                             , plot=plot)
         self.zero_mag_counts = zero_mag_counts
+        self.source_counts, self.sky_counts = source_counts, sky_counts
         return
 
     def calc_req_source(self, snr, int_time, exp_time, magnitude=False):
