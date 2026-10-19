@@ -326,6 +326,7 @@ class Observatory:
         #   Setup Paths
 
         self.support_data_observatory = support_data_telescope if support_data_telescope.endswith('/') else support_data_telescope + '/'
+        support_data_wcc = support_data_wcc if support_data_wcc.endswith('/') else support_data_wcc + '/'
         self.jitter_rms         = self.data_observatory['observatory']['pointing']['jitter_rms']
         self.diameter_primary = self.data_observatory['telescope']['optics']['m1']['aper_clear_OD']
         self.surf_area = np.pi * (0.5 * self.diameter_primary['value']) ** 2
